@@ -1,0 +1,18 @@
+{
+  "type": "string",
+  "enum": [
+    "pending",
+    "confirmed",
+    "processing",
+    "shipped",
+    "in_transit",
+    "delivered",
+    "cancelled",
+    "failed",
+    "expired",
+    "refunded",
+    "partially_refunded",
+    "disputed"
+  ],
+  "description": "Order status values"
+}

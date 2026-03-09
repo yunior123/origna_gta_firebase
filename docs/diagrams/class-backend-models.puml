@@ -1,0 +1,456 @@
+@startuml Backend Pydantic Models - Type-Safe Validation
+!pragma useVerticalIf on
+
+skinparam class {
+    BackgroundColor<<BaseModel>> LightYellow
+    BackgroundColor<<Enum>> LightCoral
+    BackgroundColor<<Validator>> LightGreen
+}
+
+' ======== Base Models ========
+
+class Address <<BaseModel>> {
+    +street : str [max 200 chars]
+    +city : str [max 100 chars]
+    +province : CanadianProvince [enum]
+    +postal_code : str [regex validated]
+    +country : str [default "Canada"]
+    +latitude : Optional[float] [geocoded]
+    +longitude : Optional[float] [geocoded]
+    --
+    **Validators:**
+    @field_validator('postal_code')
+    validate_postal_code()
+    @field_validator('country')
+    validate_seller_address()
+    @field_validator('province')
+    validate_province()
+    --
+    +to_dict() -> dict
+    +from_firestore(doc: dict) -> Address
+}
+
+enum CanadianProvince <<Enum>> {
+    ON : "Ontario"
+    QC : "Quebec"
+    BC : "British Columbia"
+    AB : "Alberta"
+    MB : "Manitoba"
+    SK : "Saskatchewan"
+    NS : "Nova Scotia"
+    NB : "New Brunswick"
+    NL : "Newfoundland and Labrador"
+    PE : "Prince Edward Island"
+    NT : "Northwest Territories"
+    YT : "Yukon"
+    NU : "Nunavut"
+}
+
+class Taxes <<BaseModel>> {
+    +province : CanadianProvince
+    +gst : float [5% federal]
+    +pst : float [provincial rate]
+    +hst : float [harmonized, if applicable]
+    +total_rate : float [computed]
+    --
+    **Tax Rates by Province:**
+    ON: 13% HST
+    QC: 5% GST + 9.975% QST = 14.975%
+    BC: 5% GST + 7% PST = 12%
+    AB: 5% GST only
+    ...
+    --
+    @classmethod
+    calculate_for_province(province, amount)
+}
+
+' ======== Product Models ========
+
+class Product <<BaseModel>> {
+    +id : Optional[str] [Firestore doc ID]
+    +name : str [1-120 chars]
+    +price : float [0.01-10000.00 CAD]
+    +description : str [max 4000 chars]
+    +image_urls : list[str] [max 5, validated URLs]
+    +seller_id : str [Firebase Auth UID]
+    +seller_address : Address
+    +category_id : int [1-21]
+    +stock_quantity : int [≥ 0]
+    +rating : float [0.0-5.0, default 0.0]
+    +rating_count : int [default 0]
+    +keywords : list[str] [max 30, lowercase]
+    +is_active : bool [default True]
+    +is_digital : bool [default False]
+    +weight_kg : Optional[float] [for shipping]
+    +length_cm : Optional[float]
+    +width_cm : Optional[float]
+    +height_cm : Optional[float]
+    +supplier : Optional[Supplier]
+    +delivery_options : list[dict]
+    +date_created : datetime
+    +date_updated : datetime
+    --
+    **Validators:**
+    @field_validator('price')
+    validate_price_range()
+    @field_validator('image_urls')
+    validate_image_urls()
+    @field_validator('keywords')
+    validate_keywords()
+    --
+    +to_firestore() -> dict
+    +to_algolia_object() -> dict
+}
+
+class Supplier <<BaseModel>> {
+    +type : SupplierType [enum]
+    +supplier_sku : Optional[str]
+    +cost : float [supplier cost]
+    +currency : str [CAD, USD, CNY...]
+    +url : Optional[str] [HttpUrl validated]
+    +notes : Optional[str] [max 500 chars]
+    +lead_time_days : Optional[int]
+    --
+    @field_validator('cost')
+    validate_positive()
+}
+
+enum SupplierType <<Enum>> {
+    ALIEXPRESS : "aliexpress"
+    ALIBABA : "alibaba"
+    AMAZON : "amazon"
+    CUSTOM : "custom"
+    DROPSHIPPER : "dropshipper"
+    MANUFACTURER : "manufacturer"
+    WHOLESALER : "wholesaler"
+}
+
+' ======== Order Models ========
+
+class Order <<BaseModel>> {
+    +id : Optional[str]
+    +user_id : str [buyer Firebase UID]
+    +items : list[OrderItem] [min 1 item]
+    +total_amount : int [CAD cents]
+    +subtotal : int [cents]
+    +tax_amount : int [cents]
+    +shipping_cost : int [cents]
+    +order_status : OrderStatus
+    +payment_status : PaymentStatus
+    +delivery_status : DeliveryStatus
+    +shipping_address : Address
+    +stripe_session_id : Optional[str]
+    +stripe_payment_intent_id : Optional[str]
+    +airwallex_payment_intent_id : Optional[str]
+    +payment_provider : PaymentProvider
+    +capture_method : CaptureMethod
+    +shipping_approval : Optional[ShippingApproval]
+    +seller_captures : dict[str, CaptureInfo]
+    +capture_attempts : int [default 0]
+    +requires_manual_review : bool
+    +fraud_score : float [0-100]
+    +tracking_number : Optional[str]
+    +carrier : Optional[str]
+    +date_created : datetime
+    +updated_at : datetime
+    +expires_at : Optional[datetime] [7 days]
+    --
+    **Validators:**
+    @field_validator('total_amount')
+    validate_total_matches()
+    @field_validator('items')
+    validate_items_not_empty()
+    @model_validator(mode='after')
+    validate_amounts_match()
+    --
+    +calculate_platform_fee() -> int
+    +get_seller_items(seller_id) -> list[OrderItem]
+}
+
+class OrderItem <<BaseModel>> {
+    +product_id : str
+    +name : str [snapshot]
+    +price : int [cents, snapshot]
+    +quantity : int [1-99]
+    +seller_id : str
+    +image_url : str
+    +is_digital : bool
+    --
+    @field_validator('quantity')
+    validate_quantity_positive()
+    --
+    +get_total() -> int
+}
+
+class OrderCreate <<BaseModel>> {
+    +items : list[OrderItemCreate]
+    +shipping_address : Address
+    +user_id : str
+    --
+    **Purpose:** Request validation
+    Server validates prices against DB
+    before creating actual Order
+}
+
+class ShippingApproval <<BaseModel>> {
+    +status : ApprovalStatus
+    +requested_at : Optional[datetime]
+    +responded_at : Optional[datetime]
+    +estimated_cost : int [cents]
+    +actual_cost : int [cents]
+    +buyer_approved : bool
+}
+
+class CaptureInfo <<BaseModel>> {
+    +captured : bool
+    +amount : int [cents]
+    +captured_at : Optional[datetime]
+    +stripe_transfer_id : Optional[str]
+    +error : Optional[str]
+}
+
+' ======== Enums ========
+
+enum OrderStatus <<Enum>> {
+    PENDING : "pending"
+    CONFIRMED : "confirmed"
+    PROCESSING : "processing"
+    SHIPPED : "shipped"
+    DELIVERED : "delivered"
+    CANCELLED : "cancelled"
+    EXPIRED : "expired"
+    REFUNDED : "refunded"
+}
+
+enum PaymentStatus <<Enum>> {
+    PENDING : "pending"
+    AUTHORIZED : "authorized"
+    CAPTURED : "captured"
+    FAILED : "failed"
+    REFUNDED : "refunded"
+}
+
+enum DeliveryStatus <<Enum>> {
+    NOT_SHIPPED : "not_shipped"
+    PREPARING : "preparing"
+    SHIPPED : "shipped"
+    IN_TRANSIT : "in_transit"
+    DELIVERED : "delivered"
+    RETURNED : "returned"
+    CANCELLED : "cancelled"
+}
+
+enum PaymentProvider <<Enum>> {
+    STRIPE : "stripe"
+    AIRWALLEX : "airwallex"
+}
+
+enum CaptureMethod <<Enum>> {
+    MANUAL : "manual"
+    AUTOMATIC : "automatic"
+}
+
+enum ApprovalStatus <<Enum>> {
+    NOT_REQUIRED : "not_required"
+    PENDING : "pending"
+    APPROVED : "approved"
+    REJECTED : "rejected"
+}
+
+' ======== User Models ========
+
+class User <<BaseModel>> {
+    +uid : str [Firebase Auth UID]
+    +email : str [EmailStr validated]
+    +name : str [2-100 chars]
+    +roles : list[UserRole]
+    +address : Optional[Address]
+    +stripe_account_id : Optional[str]
+    +airwallex_account_id : Optional[str]
+    +onboarding_completed : bool
+    +charges_enabled : bool [Stripe status]
+    +payouts_enabled : bool [Stripe status]
+    +suspended : bool
+    +suspended_at : Optional[datetime]
+    +suspension_reason : Optional[str]
+    +created_at : datetime
+    +updated_at : datetime
+    --
+    **Validators:**
+    @field_validator('email')
+    validate_email_format()
+    @field_validator('name')
+    validate_name_format()
+    --
+    +is_seller() -> bool
+    +is_admin() -> bool
+    +can_create_products() -> bool
+}
+
+enum UserRole <<Enum>> {
+    BUYER : "buyer"
+    SELLER : "seller"
+    ADMIN : "admin"
+}
+
+class SellerPayout <<BaseModel>> {
+    +id : Optional[str]
+    +order_id : str
+    +seller_id : str
+    +amount : int [cents, seller's share]
+    +platform_fee : int [2.5% of amount]
+    +net_amount : int [amount - fee]
+    +status : PayoutStatus
+    +stripe_transfer_id : Optional[str]
+    +airwallex_payout_id : Optional[str]
+    +failure_reason : Optional[str]
+    +retry_count : int [default 0]
+    +payout_date : Optional[datetime]
+    +created_at : datetime
+    +updated_at : datetime
+    --
+    @field_validator('amount')
+    validate_positive_amount()
+    --
+    +calculate_platform_fee() -> int
+}
+
+enum PayoutStatus <<Enum>> {
+    PENDING : "pending"
+    PROCESSING : "processing"
+    COMPLETED : "completed"
+    FAILED : "failed"
+}
+
+' ======== Validation Utilities ========
+
+class ValidationUtils <<Validator>> {
+    **Static Methods:**
+    --
+    +validate_canadian_postal_code(code: str)
+    +validate_email_rfc5322(email: str)
+    +validate_price_in_range(price: float)
+    +validate_url(url: str)
+    +sanitize_keywords(keywords: list[str])
+    +validate_name_format(name: str)
+    +validate_phone_number(phone: str)
+    --
+    **Regex Patterns:**
+    POSTAL_CODE = r"[A-Z]\d[A-Z] ?\d[A-Z]\d"
+    EMAIL_RFC5322 = r"^[...]$"
+    NAME_PATTERN = r"\p{{L}}+(?:[ -]\p{{L}}+)*"
+}
+
+' ======== Relationships ========
+
+Product *-- Address : seller_address
+Product *-- Supplier : supplier
+Product --> SupplierType : type
+
+Order *-- Address : shipping_address
+Order *-- "1..*" OrderItem : items
+Order *-- ShippingApproval : shipping_approval
+Order *-- "1..*" CaptureInfo : seller_captures
+Order --> OrderStatus : order_status
+Order --> PaymentStatus : payment_status
+Order --> DeliveryStatus : delivery_status
+Order --> PaymentProvider : payment_provider
+Order --> CaptureMethod : capture_method
+
+OrderItem --> Product : product_id (reference)
+
+User *-- Address : address
+User --> "1..*" UserRole : roles
+
+SellerPayout --> PayoutStatus : status
+SellerPayout --> Order : order_id (reference)
+SellerPayout --> User : seller_id (reference)
+
+Address --> CanadianProvince : province
+Address ..> ValidationUtils : validates with
+
+Taxes --> CanadianProvince : province
+
+ShippingApproval --> ApprovalStatus : status
+
+note top of Product
+  **Server-Side Price Validation**
+  
+  # In create_checkout_session function:
+  db_product = db.collection('products').document(item['productId']).get()
+  db_price = db_product.to_dict()['price']
+  client_price = item['price']
+  
+  if abs(client_price - db_price) > 0.01:  # 1 cent tolerance
+    raise HttpsError('invalid-argument', 'Price mismatch')
+  
+  Prevents client-side price tampering
+end note
+
+note top of Order
+  **State Machine Validation**
+  
+  # config.py
+  VALID_TRANSITIONS = {
+    'pending': ['confirmed', 'cancelled', 'expired'],
+    'confirmed': ['processing', 'cancelled'],
+    'processing': ['shipped', 'cancelled'],
+    'shipped': ['delivered'],
+    'delivered': ['refunded']
+  }
+  
+  def is_valid_order_status_transition(old_status, new_status):
+    return new_status in VALID_TRANSITIONS.get(old_status, [])
+  
+  Enforced in update_order_status function
+end note
+
+note bottom of ValidationUtils
+  **Address Validation**
+  
+  # Firestore security rules (buyer/shipping addresses)
+  match /orders/{orderId} {
+    allow create: if request.resource.data.shippingAddress.country in ['Canada', 'CA']
+                  && request.resource.data.shippingAddress.postalCode.matches('[A-Z]\\d[A-Z] ?\\d[A-Z]\\d');
+  }
+  
+  # Seller addresses: any country allowed
+  # Python validation (Pydantic)
+  @field_validator('sellerAddress')
+  @classmethod
+  def validate_seller_address(cls, v: Address) -> Address:
+    # Validates required fields, no country restriction
+    return v
+end note
+
+note right of Taxes
+  **Tax Calculation Example**
+  
+  # Ontario (HST)
+  subtotal = 10000  # $100.00
+  tax = Taxes.calculate_for_province('ON', subtotal)
+  # tax.hst = 1300 (13%)
+  # tax.total_rate = 0.13
+  
+  # Quebec (GST + QST)
+  tax = Taxes.calculate_for_province('QC', subtotal)
+  # tax.gst = 500 (5%)
+  # tax.pst = 997.5 (9.975%)
+  # tax.total_rate = 0.14975
+end note
+
+note bottom of SellerPayout
+  **Platform Fee Calculation**
+  
+  seller_total = 10000  # $100.00
+  platform_fee = int(seller_total * 0.025)  # $2.50
+  net_amount = seller_total - platform_fee  # $97.50
+  
+  Stripe.create_transfer(
+    destination=seller_stripe_account_id,
+    amount=net_amount,
+    currency='cad'
+  )
+end note
+
+@enduml

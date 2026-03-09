@@ -1,0 +1,19 @@
+{
+  "type": "string",
+  "enum": [
+    "awaiting_payment",
+    "processing",
+    "paid",
+    "authorized",
+    "captured",
+    "payment_failed",
+    "refunded",
+    "session_expired",
+    "cancelled",
+    "authorization_expired",
+    "capturing",
+    "cancelling",
+    "expiring"
+  ],
+  "description": "Payment status values"
+}

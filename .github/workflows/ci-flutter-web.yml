@@ -1,0 +1,33 @@
+name: CI — Flutter Web Build
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  build:
+    name: Flutter Web Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: stable
+          cache: true
+
+      - name: Build Flutter web (debug, dev env)
+        run: |
+          cd origna_gta
+          flutter build web --debug \
+            --dart-define=ENVIRONMENT=dev
+        env:
+          FLUTTER_WEB_USE_SKIA: "true"
+
+      - name: Flutter analyze
+        run: cd origna_gta && flutter analyze --no-fatal-warnings

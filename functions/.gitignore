@@ -1,0 +1,23 @@
+# Environment variables — local only, never deploy to cloud
+.env
+.env.*
+.env.local
+
+# Firebase Service Account
+serviceAccountKey*.json
+
+# Stripe debug output (must never be committed)
+stripe.txt
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+visual_audit/
+
+# Test output and coverage
+coverage.xml
+.coverage
+failed_tests.txt

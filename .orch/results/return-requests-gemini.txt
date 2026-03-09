@@ -1,0 +1,93 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+[ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5219ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 11940ms...
+Attempt 3 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 21420ms...
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 5871ms...
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5586ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 11204ms...
+Attempt 3 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 22527ms...
+Attempt 4 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 31030ms...
+I have reviewed the files and will now go through the audit checklist.
+
+### Audit Checklist - Finding 1: Return eligibility window enforced
+
+*   **Invariant Violated:** None
+*   **Observation:** The `create_return_request` function in `functions/handlers/orders.py` calls `_assert_within_return_window`, which correctly checks `BusinessRules.RETURN_WINDOW_DAYS` from `functions/schema_constants.py` (set to 7 days). Returns outside this window are rejected.
+
+### Audit Checklist - Finding 2: Only buyers can initiate returns; sellers cannot create returns on buyer's behalf
+
+*   **Invariant Violated:** None
+*   **Observation:** The `create_return_request` function explicitly verifies that `req.auth.uid` (the authenticated user) matches `order_data.get(Fields.USER_ID)` (the order's buyer). If not, a "permission-denied" error is raised.
+
+### Audit Checklist - Finding 3: Return reason required; free-text reason has length limit
+
+*   **Invariant Violated:** None
+*   **Observation:** The `create_return_request` function sanitizes the `return_reason` and truncates it to 1000 characters using `sanitized_text(...[:1000])`. It also validates that `return_reason.strip()` is not empty, making the reason required. The `ReturnRequest` Pydantic model in `functions/models/return_request.py` also enforces `max_length=1000` for both `returnReason` and `returnAdminNote`.
+
+### Audit Checklist - Finding 4 & 5: Refund calculated correctly & partial refunds calculated per-item correctly
+
+*   **Invariant Violated:** None
+*   **Observation:** Both `_process_return_refund` (for returns) and `refund_order_item` (for direct item refunds) in `functions/handlers/orders.py` calculate the refund amount as `item_subtotal_cents + proportional_tax_cents + proportional_shipping_cents`. This accurately reflects the buyer's cost for the item, including its proportional share of tax and shipping for the entire order.
+    *   **Platform Fee:** The platform fee is not directly subtracted from the buyer's refund, which is standard practice. Instead, the seller's payout is adjusted, and `stripe.Transfer.create_reversal` is used if the payout already occurred, potentially creating platform debt if the seller has insufficient funds. This approach correctly ensures the buyer receives a full refund for the item and its associated costs.
+    *   **Non-refundable shipping:** The current implementation treats shipping as proportionally refundable, which is generally appropriate for item returns. If specific shipping costs were meant to be non-refundable, this would require explicit logic.
+
+### Audit Checklist - Finding 6: Stock restored atomically
+
+*   **Invariant Violated:** None
+*   **Observation:** The `_apply_refund_atomically` function in `functions/handlers/orders.py` (used for item refunds, including those from returns) increments both `Fields.STOCK_QUANTITY` on the main product document and `Fields.AVAILABLE_QUANTITY` within the `INVENTORY_LEVELS` subcollection for the `fulfillment_wh`. This is encapsulated within a Firestore transaction, guaranteeing atomicity.
+
+### Audit Checklist - Finding 7: Digital products: stock NOT restored; license invalidated
+
+*   **Invariant Violated:** License is not explicitly invalidated for digital product refunds.
+*   **Severity:** MEDIUM
+*   **File and Line:** `functions/handlers/orders.py`, `_apply_refund_atomically` (around line 1030 for its definition in the read_file output).
+*   **Observation:** The `create_return_request` function correctly prevents the initiation of return requests for digital products (`"Digital products cannot be returned"`). Furthermore, the `_apply_refund_atomically` function explicitly skips stock restoration for digital items (`if not is_digital:`). However, there is no corresponding mechanism in the refund flow to invalidate or revoke a digital license when a digital product is refunded (e.g., if an admin manually initiates a refund for a digital product not through the return request flow).
+*   **Recommended Fix:** Implement a mechanism to explicitly invalidate or flag digital licenses as refunded/inactive in the `licenses` collection when a digital product refund occurs. This could involve updating the `LicenseStatusValues` for the associated license key.
+
+### Audit Checklist - Finding 8: Return state machine complete
+
+*   **Invariant Violated:** None
+*   **Observation:** The `ReturnStatusValues.VALID_TRANSITIONS` map in `functions/schema_constants.py` comprehensively defines the return state machine: `requested → approved/rejected/escalated`, `approved → label_issued/rejected`, `label_issued → received`, `received → refunded`. `refunded` and `rejected` are terminal states. The `approve_return_request` function enforces these transitions. Firestore security rules delegate all updates to Cloud Functions, preventing direct client manipulation of return statuses.
+
+### Audit Checklist - Finding 9: Seller notified on new return request; buyer notified on approval/rejection
+
+*   **Invariant Violated:** Email notification to buyer on approval/rejection is missing.
+*   **Severity:** MEDIUM
+*   **File and Line:**
+    *   `functions/handlers/orders.py`, `approve_return_request` (around line 1250 of the read_file output).
+    *   `functions/handlers/orders.py`, `reject_return_request` (around line 1330 - not in the truncated `read_file` output but logically must exist given the state machine).
+*   **Observation:**
+    *   **Seller notification for new return:** `create_return_request` successfully sends both a push notification and an email (`get_return_request_submitted_email`) to the seller.
+    *   **Buyer notification for approval:** `approve_return_request` sends a push notification to the buyer. However, it does not explicitly enqueue an email using `get_return_request_approved_email` from `email_service.py`. This is a gap in communication.
+    *   **Buyer notification for rejection:** Based on the state machine and email templates, there should be a `reject_return_request` function, which should also notify the buyer via email (`get_return_request_rejected_email`). I'll need to confirm its existence and functionality.
+
+I will now perform a `grep_search` for `get_return_request_approved_email` and `get_return_request_rejected_email` calls within the `functions` directory to confirm if email notifications are sent for approval/rejection.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5903ms...
+### Audit Findings for Return Request Flow
+
+#### 1. Digital Products: Stock Not Restored, License Not Invalidated
+
+*   **Severity:** MEDIUM
+*   **File and Line:** `functions/handlers/orders.py`, `_apply_refund_atomically` function (around line 1030 in the full file content).
+*   **Invariant Violated:** While digital product return *requests* are correctly blocked, and stock is not restored for digital items during refunds, there's no explicit mechanism to invalidate or revoke the digital license itself when a digital product is refunded (e.g., if an admin manually processes a refund).
+*   **Recommended Fix:** Implement a system to invalidate or mark digital licenses as refunded/inactive in the `licenses` collection when a refund for a digital product is processed. This would ensure that refunded digital products can no longer be accessed.
+
+#### 2. Buyer Manual Escalation Path to Admin is Missing
+
+*   **Severity:** MEDIUM
+*   **File and Line:**
+    *   `functions/schema_constants.py`, `ReturnStatusValues` (lines 836-848 in Python file).
+    *   `functions/models/return_request.py`, `ReturnRequest` (lines 44-48 in Python file).
+    *   `functions/schema_constants.py`, `BusinessRules` (line 1047 in Python file).
+*   **Invariant Violated:** The system includes an automated process for escalating unresolved return requests (`ESCALATED` status, `RETURN_ESCALATION_DAYS`), but there is no explicit user-initiated path for a buyer to manually escalate a disputed return directly to an administrator. This could lead to buyer frustration if a resolution is delayed or unsatisfactory.
+*   **Recommended Fix:** Create a Cloud Function (e.g., `escalate_return_request`) that allows buyers to manually trigger an escalation. This function should:
+    1.  Verify the request's authenticity and the buyer's ownership of the return.
+    2.  Check the return's current status for eligibility for manual escalation.
+    3.  Transition the return status to `ESCALATED`.
+    4.  Populate `escalatedAt` and `escalationReason` fields with relevant information (e.g., "manual_buyer_escalation").
+    5.  Trigger notifications to administrators about the newly escalated return.
+
+The remaining checklist items (Return eligibility window enforced, Only buyers can initiate returns, Return reason required & length limit, Refund calculated correctly & partial refunds, Stock restored atomically, Return state machine complete, and Seller/Buyer notifications on return request/approval/rejection) were found to be correctly implemented or adequately handled within the existing system.

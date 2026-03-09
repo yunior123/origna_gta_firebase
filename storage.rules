@@ -1,0 +1,92 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ================================================================
+    // HELPER FUNCTIONS
+    // ================================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
+    }
+    
+    function isValidImageSize() {
+      // Max 10MB for images
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // ================================================================
+    // PRODUCT IMAGES (with seller ownership validation)
+    // ================================================================
+    // Path format: products/{sellerId}/{productId}/{fileName}
+    match /products/{sellerId}/{productId}/{fileName} {
+      // Anyone can read product images (for marketplace browsing)
+      allow read: if true;
+      
+      // Only the owning seller can upload images to their own folder
+      allow create: if isOwner(sellerId) && 
+        isValidImageType() && 
+        isValidImageSize();
+      
+      // Only the owning seller can update their product images
+      allow update: if isOwner(sellerId) && 
+        isValidImageType() && 
+        isValidImageSize();
+      
+      // Only the owning seller can delete their product images
+      allow delete: if isOwner(sellerId);
+    }
+    
+    // ================================================================
+    // USER PROFILE IMAGES
+    // ================================================================
+    match /users/{userId}/profile/{fileName} {
+      // Anyone can read profile images
+      allow read: if true;
+      
+      // Only owner can upload/update their profile image
+      allow create, update: if isOwner(userId) && 
+        isValidImageType() && 
+        isValidImageSize();
+      
+      // Only owner can delete their profile image
+      allow delete: if isOwner(userId);
+    }
+    
+    // ================================================================
+    // SELLER VERIFICATION DOCUMENTS
+    // ================================================================
+    match /verification/{userId}/{fileName} {
+      // Only owner or admin can read verification documents
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        // Admin check - requires Firestore lookup which isn't available in Storage rules
+        // So we rely on Cloud Functions for admin access
+        false
+      );
+      
+      // Only owner can upload verification documents
+      allow create: if isOwner(userId) && 
+        (request.resource.contentType.matches('image/(jpeg|jpg|png|pdf)') ||
+         request.resource.contentType == 'application/pdf') &&
+        request.resource.size < 20 * 1024 * 1024;  // Max 20MB for documents
+      
+      // No updates or deletes (immutable for audit)
+      allow update, delete: if false;
+    }
+    
+    // ================================================================
+    // CATCH-ALL: DENY EVERYTHING ELSE
+    // ================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

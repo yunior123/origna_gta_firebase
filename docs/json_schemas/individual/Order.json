@@ -1,0 +1,1008 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+      "example": {
+        "apartment": "Apt 4B",
+        "city": "Toronto",
+        "country": "Canada",
+        "isDefault": true,
+        "label": "Home",
+        "phoneNumber": "4165551234",
+        "postalCode": "M5V 3A8",
+        "state": "ON",
+        "street": "123 Main Street"
+      },
+      "properties": {
+        "street": {
+          "description": "Street address",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Street",
+          "type": "string"
+        },
+        "apartment": {
+          "default": "",
+          "description": "Unit, Suite, Apt number",
+          "maxLength": 20,
+          "title": "Apartment",
+          "type": "string"
+        },
+        "city": {
+          "description": "City name",
+          "maxLength": 50,
+          "minLength": 2,
+          "title": "City",
+          "type": "string"
+        },
+        "state": {
+          "description": "Province/State code (e.g., ON, QC, BC)",
+          "maxLength": 2,
+          "minLength": 2,
+          "title": "State",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "Canadian postal code (e.g., M5V 3A8)",
+          "title": "Postalcode",
+          "type": "string"
+        },
+        "country": {
+          "default": "Canada",
+          "description": "Country name",
+          "title": "Country",
+          "type": "string"
+        },
+        "phoneNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Contact phone number for delivery",
+          "title": "Phonenumber"
+        },
+        "isDefault": {
+          "default": false,
+          "description": "Whether this is the default address",
+          "title": "Isdefault",
+          "type": "boolean"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 20,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Address label (Home, Work, Other)",
+          "title": "Label"
+        },
+        "latitude": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Latitude for mapping/delivery routing",
+          "title": "Latitude"
+        },
+        "longitude": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Longitude for mapping/delivery routing",
+          "title": "Longitude"
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "state",
+        "postalCode"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "DeliveryStatusEnum": {
+      "description": "Delivery status for individual items",
+      "enum": [
+        "pending",
+        "shipped",
+        "delivered",
+        "refunded"
+      ],
+      "title": "DeliveryStatusEnum",
+      "type": "string"
+    },
+    "OrderItem": {
+      "description": "Individual item in an order \u2014 immutable snapshot at time of purchase.",
+      "example": {
+        "deliveryStatus": "pending",
+        "description": "Fresh organic apples",
+        "imageUrls": [
+          "https://example.com/image.jpg"
+        ],
+        "name": "Organic Apples",
+        "price": 4.99,
+        "productId": "prod_123",
+        "quantity": 2,
+        "sellerAddress": {
+          "city": "Toronto",
+          "country": "Canada",
+          "postalCode": "M5V 3A8",
+          "state": "ON",
+          "street": "123 Farm Road"
+        },
+        "sellerId": "seller_123"
+      },
+      "properties": {
+        "productId": {
+          "minLength": 1,
+          "title": "Productid",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 4000,
+          "title": "Description",
+          "type": "string"
+        },
+        "price": {
+          "exclusiveMinimum": 0,
+          "title": "Price",
+          "type": "number"
+        },
+        "quantity": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "imageUrls": {
+          "description": "Product image URLs",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Imageurls",
+          "type": "array"
+        },
+        "sellerId": {
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "sellerAddress": {
+          "$ref": "#/$defs/Address"
+        },
+        "deliveryStatus": {
+          "$ref": "#/$defs/DeliveryStatusEnum",
+          "default": "pending"
+        },
+        "trackingNumber": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trackingnumber"
+        },
+        "confirmedByBuyer": {
+          "default": false,
+          "title": "Confirmedbybuyer",
+          "type": "boolean"
+        },
+        "weightKg": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weightkg"
+        },
+        "lengthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lengthcm"
+        },
+        "widthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Widthcm"
+        },
+        "heightCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Heightcm"
+        },
+        "isLocalDeliveryOnly": {
+          "default": false,
+          "title": "Islocaldeliveryonly",
+          "type": "boolean"
+        },
+        "isPerishable": {
+          "default": false,
+          "title": "Isperishable",
+          "type": "boolean"
+        },
+        "estimatedShipDays": {
+          "default": 3,
+          "minimum": 0,
+          "title": "Estimatedshipdays",
+          "type": "integer"
+        },
+        "deliveryOptions": {
+          "items": {
+            "$ref": "#/$defs/SellerDeliveryOption"
+          },
+          "title": "Deliveryoptions",
+          "type": "array"
+        },
+        "minimumOrderQuantity": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Minimumorderquantity",
+          "type": "integer"
+        },
+        "freeShipping": {
+          "default": false,
+          "title": "Freeshipping",
+          "type": "boolean"
+        },
+        "isDigital": {
+          "default": false,
+          "description": "Whether this item is a digital product",
+          "title": "Isdigital",
+          "type": "boolean"
+        },
+        "licenseKey": {
+          "anyOf": [{"type": "string"}, {"type": "null"}],
+          "default": null,
+          "description": "License key for digital product activation",
+          "title": "Licensekey"
+        },
+        "digitalUnlocked": {
+          "default": false,
+          "description": "Whether the digital license has been delivered to buyer",
+          "title": "Digitalunlocked",
+          "type": "boolean"
+        },
+        "digitalType": {
+          "anyOf": [{"type": "string", "enum": ["software", "book"]}, {"type": "null"}],
+          "default": null,
+          "description": "Type of digital item",
+          "title": "Digitaltype"
+        },
+        "digitalBuilds": {
+          "anyOf": [{"type": "object", "additionalProperties": {"type": "string"}}, {"type": "null"}],
+          "default": null,
+          "description": "Map of platform to download URL (snapshot from product)",
+          "title": "Digitalbuilds"
+        }
+      },
+      "required": [
+        "productId",
+        "name",
+        "description",
+        "price",
+        "quantity",
+        "imageUrls",
+        "sellerId",
+        "sellerAddress"
+      ],
+      "title": "OrderItem",
+      "type": "object"
+    },
+    "OrderStatusEnum": {
+      "description": "Order status values",
+      "enum": [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "in_transit",
+        "delivered",
+        "cancelled",
+        "failed",
+        "expired",
+        "refunded",
+        "partially_refunded",
+        "disputed"
+      ],
+      "title": "OrderStatusEnum",
+      "type": "string"
+    },
+    "PaymentStatusEnum": {
+      "description": "Payment status values",
+      "enum": [
+        "awaiting_payment",
+        "processing",
+        "paid",
+        "authorized",
+        "captured",
+        "payment_failed",
+        "refunded",
+        "session_expired",
+        "cancelled",
+        "authorization_expired",
+        "capturing",
+        "cancelling",
+        "expiring"
+      ],
+      "title": "PaymentStatusEnum",
+      "type": "string"
+    },
+    "Ratings": {
+      "description": "Product rating within an order.",
+      "properties": {
+        "productId": {
+          "minLength": 1,
+          "title": "Productid",
+          "type": "string"
+        },
+        "rating": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Rating",
+          "type": "number"
+        },
+        "review": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "productId",
+        "rating"
+      ],
+      "title": "Ratings",
+      "type": "object"
+    },
+    "SellerDeliveryOption": {
+      "description": "Seller-specific delivery options with quantity-based pricing",
+      "example": {
+        "additionalItemCost": 1.5,
+        "availableInternational": true,
+        "cost": 5.99,
+        "description": "Standard shipping",
+        "estimatedDays": 5,
+        "maxItemsPerShipment": 10,
+        "quantityDiscounts": [],
+        "type": "standard"
+      },
+      "properties": {
+        "type": {
+          "description": "Delivery type: pickup, standard, express, same_day",
+          "title": "Type",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of delivery option",
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "cost": {
+          "description": "Base cost in CAD",
+          "minimum": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "estimatedDays": {
+          "description": "Estimated delivery days",
+          "maximum": 90,
+          "minimum": 0,
+          "title": "Estimateddays",
+          "type": "integer"
+        },
+        "quantityDiscounts": {
+          "description": "Quantity-based shipping discounts",
+          "items": {
+            "$ref": "#/$defs/ShippingQuantityDiscount"
+          },
+          "title": "Quantitydiscounts",
+          "type": "array"
+        },
+        "maxItemsPerShipment": {
+          "default": 0,
+          "description": "Max items before cost increases (0 = no limit)",
+          "minimum": 0,
+          "title": "Maxitemspershipment",
+          "type": "integer"
+        },
+        "additionalItemCost": {
+          "default": 0.0,
+          "description": "Additional cost per item after maxItemsPerShipment",
+          "minimum": 0,
+          "title": "Additionalitemcost",
+          "type": "number"
+        },
+        "availableInternational": {
+          "default": true,
+          "description": "Whether option is available for international suppliers",
+          "title": "Availableinternational",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "description",
+        "cost",
+        "estimatedDays"
+      ],
+      "title": "SellerDeliveryOption",
+      "type": "object"
+    },
+    "SellerPayout": {
+      "description": "Payout information for a seller in an order. All money in cents.",
+      "example": {
+        "amountCents": 4750,
+        "netAmountCents": 4631,
+        "platformFeeCents": 119,
+        "sellerId": "seller_123",
+        "status": "pending",
+        "stripeAccountId": "acct_123"
+      },
+      "properties": {
+        "sellerId": {
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "stripeAccountId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripeaccountid"
+        },
+        "amountCents": {
+          "description": "Gross amount in cents",
+          "minimum": 0,
+          "title": "Amountcents",
+          "type": "integer"
+        },
+        "platformFeeCents": {
+          "description": "Platform fee in cents",
+          "minimum": 0,
+          "title": "Platformfeecents",
+          "type": "integer"
+        },
+        "netAmountCents": {
+          "description": "Net amount in cents",
+          "minimum": 0,
+          "title": "Netamountcents",
+          "type": "integer"
+        },
+        "status": {
+          "default": "pending",
+          "description": "Payout status: pending, processing, completed, failed",
+          "title": "Status",
+          "type": "string"
+        },
+        "payoutDate": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payoutdate"
+        },
+        "stripeTransferId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripetransferid"
+        },
+        "failureReason": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failurereason"
+        }
+      },
+      "required": [
+        "sellerId",
+        "amountCents",
+        "platformFeeCents",
+        "netAmountCents"
+      ],
+      "title": "SellerPayout",
+      "type": "object"
+    },
+    "ShippingApprovalStatusEnum": {
+      "description": "Shipping approval status",
+      "enum": [
+        "not_required",
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "title": "ShippingApprovalStatusEnum",
+      "type": "string"
+    },
+    "ShippingQuantityDiscount": {
+      "description": "Volume-based shipping discount thresholds",
+      "example": {
+        "discountType": "percent",
+        "discountValue": 10.0,
+        "label": "10% off shipping for 5+ items",
+        "minQuantity": 5
+      },
+      "properties": {
+        "minQuantity": {
+          "description": "Minimum quantity to qualify for this discount",
+          "minimum": 2,
+          "title": "Minquantity",
+          "type": "integer"
+        },
+        "discountType": {
+          "default": "percent",
+          "description": "Discount type: percent, fixed, flat_rate",
+          "title": "Discounttype",
+          "type": "string"
+        },
+        "discountValue": {
+          "description": "Discount value (interpretation depends on discountType)",
+          "minimum": 0,
+          "title": "Discountvalue",
+          "type": "number"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional label for display",
+          "title": "Label"
+        }
+      },
+      "required": [
+        "minQuantity",
+        "discountValue"
+      ],
+      "title": "ShippingQuantityDiscount",
+      "type": "object"
+    },
+    "Taxes": {
+      "description": "Tax breakdown for an order (Canadian taxes).",
+      "properties": {
+        "GST": {
+          "default": 0.0,
+          "description": "Goods and Services Tax (Federal)",
+          "minimum": 0,
+          "title": "Gst",
+          "type": "number"
+        },
+        "PST": {
+          "default": 0.0,
+          "description": "Provincial Sales Tax",
+          "minimum": 0,
+          "title": "Pst",
+          "type": "number"
+        },
+        "HST": {
+          "default": 0.0,
+          "description": "Harmonized Sales Tax",
+          "minimum": 0,
+          "title": "Hst",
+          "type": "number"
+        },
+        "QST": {
+          "default": 0.0,
+          "description": "Quebec Sales Tax",
+          "minimum": 0,
+          "title": "Qst",
+          "type": "number"
+        }
+      },
+      "title": "Taxes",
+      "type": "object"
+    }
+  },
+  "description": "Complete order model. All money in integer cents.",
+  "example": {
+    "createdAt": "2026-02-01T10:00:00Z",
+    "customerEmail": "buyer@example.com",
+    "customerId": "cus_stripe123",
+    "items": [],
+    "orderId": "order_123abc",
+    "orderStatus": "pending",
+    "paymentStatus": "awaiting_payment",
+    "shippingAddress": {},
+    "shippingCostCents": 500,
+    "subtotalCents": 4999,
+    "taxAmountCents": 650,
+    "taxes": {
+      "GST": 2.5,
+      "PST": 3.5
+    },
+    "totalAmountCents": 6149,
+    "userId": "user_123"
+  },
+  "properties": {
+    "orderId": {
+      "minLength": 1,
+      "title": "Orderid",
+      "type": "string"
+    },
+    "userId": {
+      "minLength": 1,
+      "title": "Userid",
+      "type": "string"
+    },
+    "customerId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Customerid"
+    },
+    "customerEmail": {
+      "anyOf": [
+        {
+          "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Customeremail"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/OrderItem"
+      },
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+    },
+    "sellerIds": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Sellerids",
+      "type": "array"
+    },
+    "subtotalCents": {
+      "minimum": 0,
+      "title": "Subtotalcents",
+      "type": "integer"
+    },
+    "shippingCostCents": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Shippingcostcents",
+      "type": "integer"
+    },
+    "taxAmountCents": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Taxamountcents",
+      "type": "integer"
+    },
+    "totalAmountCents": {
+      "minimum": 0,
+      "title": "Totalamountcents",
+      "type": "integer"
+    },
+    "taxes": {
+      "$ref": "#/$defs/Taxes"
+    },
+    "orderStatus": {
+      "$ref": "#/$defs/OrderStatusEnum",
+      "default": "pending"
+    },
+    "paymentStatus": {
+      "$ref": "#/$defs/PaymentStatusEnum",
+      "default": "awaiting_payment"
+    },
+    "shippingAddress": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Address"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "updatedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Updatedat"
+    },
+    "stripeSessionId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stripesessionid"
+    },
+    "stripePaymentIntentId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stripepaymentintentid"
+    },
+    "currency": {
+      "default": "cad",
+      "title": "Currency",
+      "type": "string"
+    },
+    "shippingApprovalStatus": {
+      "$ref": "#/$defs/ShippingApprovalStatusEnum",
+      "default": "not_required"
+    },
+    "shippingApprovalRequired": {
+      "default": false,
+      "title": "Shippingapprovalrequired",
+      "type": "boolean"
+    },
+    "actualShipping": {
+      "default": 0.0,
+      "minimum": 0,
+      "title": "Actualshipping",
+      "type": "number"
+    },
+    "pendingTotal": {
+      "default": 0.0,
+      "minimum": 0,
+      "title": "Pendingtotal",
+      "type": "number"
+    },
+    "sellerPayouts": {
+      "items": {
+        "$ref": "#/$defs/SellerPayout"
+      },
+      "title": "Sellerpayouts",
+      "type": "array"
+    },
+    "confirmedByClient": {
+      "default": false,
+      "title": "Confirmedbyclient",
+      "type": "boolean"
+    },
+    "confirmedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confirmedat"
+    },
+    "platformFeeTotal": {
+      "default": 0.0,
+      "minimum": 0,
+      "title": "Platformfeetotal",
+      "type": "number"
+    },
+    "payoutStatus": {
+      "default": "pending",
+      "description": "Overall payout status: pending, processing, completed, partial",
+      "title": "Payoutstatus",
+      "type": "string"
+    },
+    "ratings": {
+      "items": {
+        "$ref": "#/$defs/Ratings"
+      },
+      "title": "Ratings",
+      "type": "array"
+    },
+    "taxExemption": {
+      "anyOf": [
+        {
+          "description": "Tax exemption details for B2B customers",
+          "properties": {
+            "gstNumber": {
+              "description": "Canadian GST/HST number",
+              "pattern": "^\\d{9}[A-Z]{2}\\d{4}$",
+              "type": "string"
+            },
+            "updatedAt": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          "required": ["gstNumber"],
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "B2B tax exemption details (GST number)",
+      "title": "Taxexemption"
+    },
+    "taxExempt": {
+      "default": false,
+      "description": "Whether order is tax exempt (B2B reverse charge)",
+      "title": "Taxexempt",
+      "type": "boolean"
+    },
+    "itemTaxes": {
+      "items": {
+        "description": "Per-item tax breakdown",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "taxCents": {
+            "description": "Tax amount in cents for this item",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "taxRate": {
+            "description": "Tax rate applied (0.0 to 1.0)",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": ["productId", "taxCents", "taxRate"],
+        "type": "object"
+      },
+      "default": [],
+      "description": "Per-item tax breakdown for detailed reporting",
+      "title": "Itemtaxes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "orderId",
+    "userId",
+    "items",
+    "subtotalCents",
+    "totalAmountCents"
+  ],
+  "title": "Order",
+  "type": "object"
+}

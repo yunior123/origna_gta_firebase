@@ -1,0 +1,37 @@
+# Ruff configuration for OrignaGta backend (Python Cloud Functions)
+# https://docs.astral.sh/ruff/configuration/
+
+target-version = "py313"
+line-length = 120
+
+[lint]
+# Enable core rule sets: pyflakes (F), pycodestyle (E/W), isort (I), bugbear (B)
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+# Rules to ignore (pragmatic for Firebase Cloud Functions)
+ignore = [
+  "E501",   # Line too long — handled by line-length setting
+  "B008",   # Do not perform function call in argument defaults (needed for Flask/Firebase)
+]
+
+# Exclude generated files and virtual environments
+exclude = [
+  "__pycache__",
+  "venv",
+  ".venv",
+  "mock_stripe.py",
+  "mock_stripe_server.py",
+  "main_old.py.backup",
+]
+
+[lint.per-file-ignores]
+# Tests can have unused imports (fixtures) and assertions
+"tests/**/*.py" = ["F401", "F811", "B011"]
+"test_*.py" = ["F401", "F811", "B011"]
+# Diagnostic scripts need sys.path manipulation before project imports
+"scripts/diagnostics/**/*.py" = ["E402"]
+# Algolia config script: sys.path manipulation requires deferred imports
+"scripts/configure_algolia_indices.py" = ["E402"]
+
+[lint.isort]
+known-first-party = ["handlers", "models", "config", "schema_constants", "utils"]

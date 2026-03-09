@@ -1,0 +1,100 @@
+{
+  "description": "Payout information for a seller in an order. All money in cents.",
+  "example": {
+    "amountCents": 4750,
+    "netAmountCents": 4631,
+    "platformFeeCents": 119,
+    "sellerId": "seller_123",
+    "status": "pending",
+    "stripeAccountId": "acct_123"
+  },
+  "properties": {
+    "sellerId": {
+      "minLength": 1,
+      "title": "Sellerid",
+      "type": "string"
+    },
+    "stripeAccountId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stripeaccountid"
+    },
+    "amountCents": {
+      "description": "Gross amount in cents",
+      "minimum": 0,
+      "title": "Amountcents",
+      "type": "integer"
+    },
+    "platformFeeCents": {
+      "description": "Platform fee in cents",
+      "minimum": 0,
+      "title": "Platformfeecents",
+      "type": "integer"
+    },
+    "netAmountCents": {
+      "description": "Net amount in cents",
+      "minimum": 0,
+      "title": "Netamountcents",
+      "type": "integer"
+    },
+    "status": {
+      "default": "pending",
+      "description": "Payout status: pending, processing, completed, failed",
+      "title": "Status",
+      "type": "string"
+    },
+    "payoutDate": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Payoutdate"
+    },
+    "stripeTransferId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stripetransferid"
+    },
+    "failureReason": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Failurereason"
+    }
+  },
+  "required": [
+    "sellerId",
+    "amountCents",
+    "platformFeeCents",
+    "netAmountCents"
+  ],
+  "title": "SellerPayout",
+  "type": "object"
+}

@@ -1,0 +1,166 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+[ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+I will now audit the product CRUD lifecycle based on the provided checklist. My first step will be to read all the specified files to understand the current implementation. I'll then systematically go through each item on the audit checklist, noting any violations with their severity, location, the invariant violated, and a recommended fix.
+
+Here's my plan:
+Okay, I'll read the files from the todo list concurrently.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5324ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 10755ms...
+Attempt 3 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 22393ms...
+Attempt 4 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 33895ms...
+Attempt 5 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 34530ms...
+Files read. Now, I'm auditing the product CRUD lifecycle, starting with SKU dedup. I'll examine `functions/handlers/products.py` and `functions/models/product.py`, focusing on `create_product_atomic` for `sellerSku` and its atomic uniqueness check, updating my todo list as I go.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 5327ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 11480ms...
+I've verified the SKU deduplication logic in `functions/handlers/products.py`. The `create_product_atomic` function creates a document using `f"{seller_id}_{product_create.sellerSku}"` in the `SELLER_SKUS` collection, checking for existing documents to enforce uniqueness. This confirms the use of a `sellerId + sellerSku` composite key for deduplication. I'll update the todo list now.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5688ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 10105ms...
+The Algolia sync with Firestore is not atomic, as `algolia_service.index_product` explicitly warns and operates outside of Firestore transactions. In `create_product_atomic`, `index_product` is called post-Firestore commit, meaning a failure there would leave data inconsistent: product in Firestore, but not Algolia, violating the "no partial sync on failure" requirement.
+
+**Severity:** CRITICAL
+**File and Line:** `functions/services/algolia_service.py`, lines 58-63, and `functions/handlers/products.py`, line ~140 (`algolia_service.index_product(product_data)`).
+**Invariant Violated:** Algolia sync atomic with Firestore write; no partial sync on failure.
+**Recommended fix:** Implement a robust mechanism for guaranteed eventual consistency or atomicity. A queue-based system (e.g., Cloud Tasks/PubSub) with retry logic for Algolia indexing, initiated from within the Firestore transaction or as a Cloud Function trigger, would ensure eventual consistency. Alternatively, a two-phase commit or saga pattern could be considered if strict atomicity is required. The current call to `algolia_service.index_product` at `functions/handlers/products.py` (line ~140) must be modified to ensure failure of Algolia indexing either prevents the Firestore commit or triggers a reliable compensation/retry workflow.
+The `stockQuantity` field is not consistently synchronized with `inventoryLevels` or `warehouseStockMap` during product creation and updates, directly violating the stated invariant that `stockQuantity` should equal the sum of all warehouse `inventoryLevels`. The `create_product_atomic` function explicitly notes this as a `TODO`, and `update_product` modifies `stockQuantity` independently.
+
+**Severity:** CRITICAL
+**File and Line:**
+*   `functions/handlers/products.py`, lines ~117-133 (in `create_product_atomic`)
+*   `functions/handlers/products.py`, lines ~278-279 (in `update_product`)
+*   `functions/models/product.py`, line ~220 (comment for `warehouseStockMap`)
+**Invariant Violated:** `stockQuantity` at product level equals sum of all warehouse `inventoryLevels`.
+**Recommended fix:**
+1.  **Product Creation:** When `warehouseIds` are present, `stockQuantity` must be derived by summing initial `inventoryLevels` across specified warehouses. These `inventoryLevels` should be explicitly initialized.
+2.  **Product Updates:**
+    *   Direct client updates to `stockQuantity` should be restricted when multi-warehouse is enabled. Instead, updates should target specific `inventoryLevels` for individual warehouses.
+    *   Implement a Cloud Function trigger that listens for changes to `products/{productId}/inventoryLevels/{warehouseId}`. This trigger should automatically calculate the sum of `availableQuantity` from all `inventoryLevels` subdocuments for that product and update the `products/{productId}.stockQuantity` accordingly.
+    *   If `warehouseStockMap` is provided in an update, it should drive updates to `inventoryLevels`, and `stockQuantity` should be re-calculated from those levels.
+I've audited the requirement that "Warehouse OR `sellerAddress` is required, not both null." The `Product` model in `functions/models/product.py` includes a `model_validator` that enforces this for existing products. Additionally, the `create_product_atomic` function in `functions/handlers/products.py` contains explicit server-side validation to ensure this invariant holds true during product creation. Both mechanisms correctly handle the condition, therefore the invariant is satisfied.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended fix:** None.
+The audit item regarding the `isActive` flag is superseded by the `lifecycleStatus` field, as per `functions/schema_constants.py`. On creation, `functions/handlers/products.py` correctly sets `lifecycleStatus` to `UNDER_REVIEW`. During updates, `firestore.rules` enforces that sellers can only set `lifecycleStatus` to `draft` or `paused`, preventing them from directly activating products; only admins can transition to `active`. This aligns with the intended state machine. Thus, the `lifecycleStatus` is correctly managed.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended Fix:** None.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 5282ms...
+The denormalization of `shipFromCity`, `shipFromProvince`, and `shipFromCountry` is correctly implemented in `functions/handlers/products.py` for both product creation and updates. The logic accounts for fetching from the primary warehouse or `sellerAddress`, and handles updates and edge cases where warehouses might not be found. Thus, the invariant is satisfied.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended fix:** None.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 5577ms...
+I've verified that images are uploaded to R2 and their URLs obtained *before* the product document is created or updated in Firestore. The client-side `add_product_viewmodel.dart` and `product_repository.dart` handle image uploads via the `upload_product_images` Cloud Function prior to invoking the `createProduct` function. This ensures that no dangling product documents in Firestore point to non-existent images, satisfying the audit item. While dangling images in R2 might occur if the subsequent Firestore write fails, this specific invariant is met.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended fix:** None.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5204ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 11915ms...
+Attempt 3 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 21786ms...
+I've examined the `firestore.rules` for the `products` collection and confirmed that the update and delete operations are properly restricted. The rules ensure that only the authenticated product owner—or an administrator—can modify or remove a product, using `resource.data.sellerId == request.auth.uid` as a key condition, alongside an `isSellerApproved()` check for sellers. This correctly enforces the seller authorization invariant.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended fix:** None.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 1s.. Retrying after 5157ms...
+I've thoroughly audited the price bounds across `functions/schema_constants.py`, `functions/models/product.py`, `functions/handlers/products.py`, and `firestore.rules`. All layers consistently enforce that product prices must be greater than 0 and less than or equal to 100,000 (implicitly CAD). Pydantic models, Python backend logic, and Firestore security rules all contain explicit checks for this range. Therefore, the "Price bounds enforced: CAD only, > 0, within reasonable max?" invariant is satisfied.
+
+**Severity:** None
+**Invariant Violated:** None
+**Recommended fix:** None.
+Product deletion lacks atomic cleanup across Firestore, Algolia, and R2. While Firestore deletion proceeds, Algolia deletion may fail and images in R2 might not be removed due to the "best-effort" approach and unhandled exceptions. This violates the critical invariant of complete and consistent product removal.
+
+**Severity:** CRITICAL
+**File and Line:**
+*   `functions/handlers/products.py`, lines ~358-366 (R2 image deletion logic)
+*   `functions/services/algolia_service.py`, line ~145 (Algolia deletion failure handling)
+**Invariant Violated:** Product deletion cleans up Algolia index entry and R2 images (atomically or with guaranteed eventual consistency).
+**Recommended fix:**
+1.  **Algolia cleanup:** Implement a robust retry mechanism for Algolia deletion, possibly using a dedicated `algolia_sync_failures` collection or a queue, and ensure the main deletion flow handles these failures gracefully (e.g., by logging for manual intervention or guaranteed retry).
+2.  **R2 image cleanup:** Remove the "best-effort" approach. Implement an asynchronous Cloud Function trigger (`onDelete` on the products collection) to handle R2 image deletion. This trigger should include retry logic and a dead-letter queue to guarantee eventual consistency and robust cleanup, preventing orphaned images.
+Attempt 1 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 5392ms...
+Attempt 2 failed: You have exhausted your capacity on this model. Your quota will reset after 0s.. Retrying after 11518ms...
+I've verified that inactive products are correctly filtered from Algolia search results. The `_prepare_product_for_algolia` function ensures only `ACTIVE` products are prepped for indexing, and `_index_product_sync` handles the removal of non-active products from Algolia. The invariant is satisfied. I will now summarize all audit findings.
+I have completed the audit of the product CRUD lifecycle and summarized the findings below.
+
+## Audit Report: Product Lifecycle Management
+
+**Date:** February 28, 2026
+**Auditor Role:** `product-lifecycle-auditor`
+
+### Findings Summary:
+
+1.  **SKU dedup enforced using `sellerId + sellerSku` composite key?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/handlers/products.py`, lines ~117-133
+    *   **Recommended fix:** None.
+
+2.  **Algolia sync atomic with Firestore write; no partial sync on failure?**
+    *   **Finding:** **Violated.** Algolia indexing is eventually consistent, not atomic with Firestore. Failures after Firestore commit can lead to product presence in Firestore but absence in Algolia.
+    *   **Severity:** CRITICAL
+    *   **File/Line:** `functions/services/algolia_service.py`, lines 58-63; `functions/handlers/products.py`, line ~140
+    *   **Recommended fix:** Implement queue-based asynchronous indexing with retry logic or a Saga pattern for cross-system atomicity.
+
+3.  **`stockQuantity` at product level equals sum of all warehouse `inventoryLevels`?**
+    *   **Finding:** **Violated.** `stockQuantity` is not correctly initialized or updated to reflect the sum of `inventoryLevels` for multi-warehouse products, as explicitly noted by a `TODO` in creation logic and direct updates in `update_product`.
+    *   **Severity:** CRITICAL
+    *   **File/Line:** `functions/handlers/products.py`, lines ~117-133, ~278-279; `functions/models/product.py`, line ~220
+    *   **Recommended fix:** For creation, derive `stockQuantity` from initial `inventoryLevels`. For updates, use a Cloud Function trigger on `inventoryLevels` to sum and update the parent `stockQuantity`.
+
+4.  **Warehouse OR `sellerAddress` required; not both null?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/models/product.py`, lines 282-286; `functions/handlers/products.py`, lines 105-108
+    *   **Recommended fix:** None.
+
+5.  **`isActive` flag correctly set on create (UNDER_REVIEW) and update?** (Audited as `lifecycleStatus`)
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/handlers/products.py`, line ~120; `firestore.rules`, lines ~270-280
+    *   **Recommended fix:** None.
+
+6.  **`shipFromCity`/`shipFromProvince`/`shipFromCountry` denormalized correctly from warehouse?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/handlers/products.py`, lines ~138-158, ~285-330
+    *   **Recommended fix:** None.
+
+7.  **Image uploaded to R2 before product doc written; no dangling doc with missing image?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `origna_gta/lib/features/products/add_product_viewmodel.dart`, line ~130; `origna_gta/lib/core/repositories/product_repository.dart`, line ~100; `functions/handlers/products.py`, line ~369
+    *   **Recommended fix:** None.
+
+8.  **Seller authorization: only the product owner can update/delete their product?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `firestore.rules`, lines ~240-280, ~282-284
+    *   **Recommended fix:** None.
+
+9.  **Price bounds enforced: CAD only, > 0, within reasonable max?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/schema_constants.py`, lines ~600-610; `functions/models/product.py`, lines ~220, ~330; `functions/handlers/products.py`, lines ~100, ~270-278; `firestore.rules`, lines ~260, ~290
+    *   **Recommended fix:** None.
+
+10. **Product deletion cleans up Algolia index entry and R2 images?**
+    *   **Finding:** **Violated.** Deletion cleanup for Algolia and R2 is not atomic. R2 image deletion is "best-effort" and does not re-raise exceptions, leading to orphaned images. Algolia deletion failures can also leave inconsistent data.
+    *   **Severity:** CRITICAL
+    *   **File/Line:** `functions/handlers/products.py`, lines ~358-366; `functions/services/algolia_service.py`, line ~145
+    *   **Recommended fix:** Implement robust, eventually consistent cleanup for Algolia (e.g., dedicated retry queue) and R2 (e.g., Firestore `onDelete` trigger with retry/DLQ).
+
+11. **Inactive products filtered from Algolia search results?**
+    *   **Finding:** Satisfied.
+    *   **Severity:** None
+    *   **File/Line:** `functions/services/algolia_service.py`, lines ~70-76, ~170-172
+    *   **Recommended fix:** None.
+
+### Overall Assessment:
+
+The product lifecycle management system has a strong foundation, with most invariants correctly implemented. However, **three critical issues** related to transactional integrity and data consistency across Firestore, Algolia, and R2 storage require immediate attention: the non-atomic nature of Algolia sync during product creation, the inaccuracy of `stockQuantity` for multi-warehouse products, and the non-atomic cleanup of Algolia entries and R2 images upon product deletion. Addressing these will significantly enhance reliability and data integrity.

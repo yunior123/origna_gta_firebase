@@ -1,0 +1,128 @@
+workflows:
+  quality-gate-remote:
+    name: Full Quality Gate (Remote)
+    max_build_duration: 180
+    instance_type: mac_mini_m2
+    environment:
+      flutter: default
+      xcode: latest
+      cocoapods: default
+      vars:
+        E2E_WORKERS: "1"
+        E2E_FAIL_ON_FLAKY: "true"
+    scripts:
+      - name: Flutter dependencies
+        script: |
+          flutter pub get
+      - name: E2E dependencies
+        script: |
+          cd "$CM_BUILD_DIR/../e2e"
+          npm ci
+          npx playwright install chromium
+      - name: Backend dependencies
+        script: |
+          cd "$CM_BUILD_DIR/../functions"
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install pytest pytest-cov
+      - name: Run random Flutter integration flows (Crash check)
+        script: |
+          cd "$CM_BUILD_DIR/.."
+          flutter config --enable-macos-desktop
+          FLOWS=($(ls origna_gta/integration_test/flows/*_test.dart))
+          # Shuffle and pick 1 random flow to stay well within free limits
+          RANDOM_FLOW=$(shuf -e "${FLOWS[@]}" | head -n 1)
+          echo "Running random integration flow: $RANDOM_FLOW"
+          cd origna_gta && flutter test -d macos "$RANDOM_FLOW"
+      - name: Run strict quality gate (remote)
+        script: |
+          cd "$CM_BUILD_DIR/.."
+          flutter config --enable-macos-desktop
+          RUN_FLUTTER_INTEGRATION_COVERAGE="true" \
+          FLUTTER_INTEGRATION_DEVICE="macos" \
+          ./scripts/run_quality_gate.sh --backend-gate-mode strict
+      - name: Collect quality artifacts
+        script: |
+          mkdir -p "$CM_BUILD_DIR/build/remote-quality"
+          if [ -f "$CM_BUILD_DIR/../functions/coverage.xml" ]; then
+            cp "$CM_BUILD_DIR/../functions/coverage.xml" "$CM_BUILD_DIR/build/remote-quality/backend-coverage.xml"
+          fi
+          if [ -f "$CM_BUILD_DIR/coverage_unit.info" ]; then
+            cp "$CM_BUILD_DIR/coverage_unit.info" "$CM_BUILD_DIR/build/remote-quality/flutter-coverage.info"
+          fi
+          if [ -f "$CM_BUILD_DIR/coverage_integration.info" ]; then
+            cp "$CM_BUILD_DIR/coverage_integration.info" "$CM_BUILD_DIR/build/remote-quality/flutter-integration-coverage.info"
+          fi
+          if [ -f "$CM_BUILD_DIR/../e2e/coverage-playwright/lcov.info" ]; then
+            cp "$CM_BUILD_DIR/../e2e/coverage-playwright/lcov.info" "$CM_BUILD_DIR/build/remote-quality/playwright-coverage.info"
+          fi
+          if [ -d "$CM_BUILD_DIR/../e2e/playwright-report" ]; then
+            rm -rf "$CM_BUILD_DIR/build/remote-quality/playwright-report"
+            cp -R "$CM_BUILD_DIR/../e2e/playwright-report" "$CM_BUILD_DIR/build/remote-quality/playwright-report"
+          fi
+    artifacts:
+      - build/remote-quality/**
+
+  android-release:
+    name: Android Release (Play Store)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      flutter: default
+      groups:
+        - android_credentials
+      vars:
+        PACKAGE_NAME: "ca.orignagta.origna_gta"
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/android/upload-keystore.jks
+          cat <<EOF > $CM_BUILD_DIR/android/key.properties
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=../upload-keystore.jks
+          EOF
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Build Android App Bundle (AAB)
+        script: |
+          flutter build appbundle --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+      - build/app/outputs/flutter-apk/app-release.apk
+      - build/**/outputs/mapping/**/mapping.txt
+
+  ios-release:
+    name: iOS Release (No App Store)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      flutter: default
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "ca.orignagta.origna_gta"
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Build unsigned iOS App (Runner.app)
+        script: |
+          flutter build ios --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER \
+            --no-codesign
+    artifacts:
+      - build/ios/iphoneos/Runner.app

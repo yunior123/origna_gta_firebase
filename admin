@@ -1,0 +1,6 @@
+#!/bin/bash
+# admin — OrignaGTA Admin CLI wrapper
+# Usage: ./admin <group> <command> --env=dev|staging|prod
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+source "$REPO_ROOT/functions/venv/bin/activate"
+python -m cli.cli "$@"

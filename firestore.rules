@@ -1,0 +1,825 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ================================================================
+    // HELPER FUNCTIONS
+    // ================================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isStringWithLen(value, minLen, maxLen) {
+      return value is string && value.size() >= minLen && value.size() <= maxLen;
+    }
+
+    function isValidName(name) {
+      // Allow letters, apostrophes, periods, hyphens, spaces (e.g., O'Brien, Jr., Mary-Jane)
+      return isStringWithLen(name, 2, 60) &&
+        name.matches("^[a-zA-ZÀ-ÿ][a-zA-ZÀ-ÿ'. \\-]*[a-zA-ZÀ-ÿ.']?$");
+    }
+
+    function isValidPostalCode(code) {
+      return isStringWithLen(code, 6, 7) &&
+        code.matches('^[A-Za-z]\\d[A-Za-z][ -]?\\d[A-Za-z]\\d$');
+    }
+
+    function isValidProvince(code) {
+      return code in ['AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT'];
+    }
+
+    function isValidAddress(addr) {
+      return addr is map &&
+        addr.keys().hasOnly(['street','apartment','city','state','postalCode','country','phoneNumber','isDefault','label','latitude','longitude']) &&
+        isStringWithLen(addr.street, 3, 100) &&
+        (addr.apartment == null || isStringWithLen(addr.apartment, 1, 20)) &&
+        isStringWithLen(addr.city, 2, 50) &&
+        isValidProvince(addr.state) &&
+        isValidPostalCode(addr.postalCode) &&
+        // Buyer/shipping addresses must be in Canada — enforce canonical value only
+        (addr.country == 'Canada') &&
+        (addr.phoneNumber == null || (addr.phoneNumber is string && addr.phoneNumber.matches('^\\+?\\d{10,15}$'))) &&
+        (addr.isDefault == null || addr.isDefault is bool) &&
+        (addr.label == null || isStringWithLen(addr.label, 1, 30)) &&
+        (addr.latitude == null || (addr.latitude is number && addr.latitude >= -90 && addr.latitude <= 90)) &&
+        (addr.longitude == null || (addr.longitude is number && addr.longitude >= -180 && addr.longitude <= 180));
+    }
+
+    // Seller addresses can be from any country — no Canada-only restriction
+    function isValidSellerAddress(addr) {
+      return addr is map &&
+        addr.keys().hasOnly(['street','apartment','city','state','postalCode','country','phoneNumber','isDefault','label','latitude','longitude']) &&
+        isStringWithLen(addr.street, 3, 100) &&
+        (addr.apartment == null || isStringWithLen(addr.apartment, 1, 20)) &&
+        isStringWithLen(addr.city, 2, 50) &&
+        isStringWithLen(addr.state, 1, 50) &&
+        isStringWithLen(addr.postalCode, 2, 15) &&
+        isStringWithLen(addr.country, 2, 56) &&
+        (addr.phoneNumber == null || (addr.phoneNumber is string && addr.phoneNumber.matches('^\\+?\\d{10,15}$'))) &&
+        (addr.isDefault == null || addr.isDefault is bool) &&
+        (addr.label == null || isStringWithLen(addr.label, 1, 30)) &&
+        (addr.latitude == null || (addr.latitude is number && addr.latitude >= -90 && addr.latitude <= 90)) &&
+        (addr.longitude == null || (addr.longitude is number && addr.longitude >= -180 && addr.longitude <= 180));
+    }
+
+    // Digital products do not require a shippable seller address, but shape must remain strict.
+    function isValidDigitalSellerAddress(addr) {
+      return addr is map &&
+        addr.keys().hasOnly(['street','apartment','city','state','postalCode','country','phoneNumber','isDefault','label','latitude','longitude']) &&
+        (addr.street is string && addr.street.size() <= 100) &&
+        (addr.apartment == null || (addr.apartment is string && addr.apartment.size() <= 20)) &&
+        (addr.city is string && addr.city.size() <= 50) &&
+        (addr.state is string && addr.state.size() <= 50) &&
+        (addr.postalCode is string && addr.postalCode.size() <= 15) &&
+        (addr.country is string && addr.country.size() <= 56) &&
+        (addr.phoneNumber == null || (addr.phoneNumber is string && addr.phoneNumber.matches('^\\d{10,15}$'))) &&
+        (addr.isDefault == null || addr.isDefault is bool) &&
+        (addr.label == null || isStringWithLen(addr.label, 1, 30)) &&
+        (addr.latitude == null || (addr.latitude is number && addr.latitude >= -90 && addr.latitude <= 90)) &&
+        (addr.longitude == null || (addr.longitude is number && addr.longitude >= -180 && addr.longitude <= 180));
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid))
+          .data.roles.hasAny([role]);
+    }
+    
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function hasActivePremium(userId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/subscriptions/$(userId)) &&
+        get(/databases/$(database)/documents/subscriptions/$(userId)).data.status in ['active', 'trialing'];
+    }
+
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getSellerDoc() {
+      return get(/databases/$(database)/documents/seller_profiles/$(request.auth.uid)).data;
+    }
+
+    function isSellerApproved() {
+      let userDoc = getUserDoc();
+      let sellerDoc = getSellerDoc();
+      return isAuthenticated() && (
+        userDoc.roles.hasAny(['admin']) || (
+          userDoc.roles.hasAny(['seller']) &&
+          sellerDoc.onboardingCompleted == true &&
+          sellerDoc.chargesEnabled == true &&
+          sellerDoc.payoutsEnabled == true
+        )
+      ) && userDoc.suspended != true;
+    }
+
+    function isProductOwner() {
+      return isAuthenticated() && resource.data.sellerId == request.auth.uid;
+    }
+    
+    // ================================================================
+    // ORDER STATE MACHINE VALIDATION - CRITICAL BUSINESS LOGIC
+    // ================================================================
+    function isValidOrderStateTransition(currentStatus, newStatus) {
+      // Define valid state transitions
+      // This prevents data corruption from invalid status changes
+      let validTransitions = {
+        'pending': ['confirmed', 'cancelled', 'failed', 'expired'], // Initial state -> completed states
+        'confirmed': ['processing', 'cancelled', 'expired'],       // After payment confirmed
+        'processing': ['shipped', 'cancelled'],                    // Seller processing
+        'shipped': ['in_transit', 'delivered'],                     // Shipped / in transit (cancel not allowed after ship)
+        'in_transit': ['delivered', 'cancelled'],                  // Carrier in transit
+        'delivered': ['disputed'],                                  // After delivery
+        'cancelled': [],                                            // Terminal state - no transitions
+        'failed': ['pending'],                                      // Retry -> pending
+        'expired': ['pending'],                                     // Retry -> pending
+        'disputed': [],                                             // Terminal state
+        'partially_refunded': [],                                   // Terminal state (partial refund issued)
+        'refunded': [],                                             // Terminal state (full refund issued)
+      };
+      
+      // Get valid next states for current status
+      let allowedNextStates = validTransitions.get(currentStatus, []);
+      return newStatus in allowedNextStates;
+    }
+    
+    // ================================================================
+    // USERS COLLECTION
+    // ================================================================
+    match /users/{userId} {
+      // Users can read their own profile
+      // Admins can read any profile
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can update their own profile (limited fields only)
+      // Admins can update any user profile fields
+      // SECURITY: Email is immutable for non-admin users (must match existing value)
+      allow update: if isAdmin() || (isOwner(userId) &&
+        request.resource.data.roles == resource.data.roles &&
+        request.resource.data.email == resource.data.email &&
+        isValidName(request.resource.data.name) &&
+        (request.resource.data.address == null || isValidAddress(request.resource.data.address)) &&
+        // Prevent users from modifying seller-specific fields (safe access for buyer accounts that lack these fields)
+        (!resource.data.keys().hasAny(['verified']) || request.resource.data.verified == resource.data.verified) &&
+        (!resource.data.keys().hasAny(['verificationStatus']) || request.resource.data.verificationStatus == resource.data.verificationStatus) &&
+        (!resource.data.keys().hasAny(['payoutHoldDays']) || request.resource.data.payoutHoldDays == resource.data.payoutHoldDays) &&
+        (!resource.data.keys().hasAny(['suspended']) || request.resource.data.suspended == resource.data.suspended) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name',
+          'address',
+          'lastCheckoutSession',
+          'lastOrderId',
+          'lastCheckoutTimestamp',
+          'notifyNewProducts',
+          'notifyTrending',
+          'pushEnabled'
+        ])) ||
+      // Simplified rule for notification-only updates (avoids address validation edge cases)
+      (isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notifyNewProducts', 'notifyTrending', 'pushEnabled']));
+      
+      // Users can create their own profile with strict fields only.
+      // NOTE: preferred path is the create_user_profile Cloud Function (server controls consent).
+      // This rule is a fallback; it enforces correct consent values even if called directly.
+      allow create: if isOwner(userId) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.roles.size() == 1 &&
+        request.resource.data.roles[0] == 'buyer' &&
+        // Enforce correct consent values — client cannot forge false consent
+        (!request.resource.data.keys().hasAny(['dataProcessingConsent']) || request.resource.data.dataProcessingConsent == true) &&
+        (!request.resource.data.keys().hasAny(['emailConsent']) || request.resource.data.emailConsent == true) &&
+        (!request.resource.data.keys().hasAny(['marketingOptIn']) || request.resource.data.marketingOptIn == false) &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'email', 'name', 'roles', 'address', 'createdAt',
+          'emailConsent', 'consentTimestamp', 'consentMethod',
+          'privacyAcceptedAt', 'termsAcceptedAt',
+          'dataProcessingConsent', 'marketingOptIn',
+          'privacyPolicyVersion', 'termsVersion',
+          'preferredLanguage', 'platform'
+        ]);
+      
+      // Users can't delete their own account (use Cloud Function)
+      allow delete: if false;
+
+      // --- NOTIFICATIONS SUBCOLLECTION ---
+      match /notifications/{notifId} {
+        allow read: if isOwner(userId);
+        // Allow owners to mark notifications as read only
+        allow update: if isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
+          request.resource.data.isRead == true;
+        // Backend-only creates and deletes
+        allow create, delete: if false;
+      }
+
+      // --- FCM TOKENS SUBCOLLECTION ---
+      // Each doc keyed by token hash; owner writes their own tokens, backend manages via Admin SDK.
+      match /fcm_tokens/{tokenId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+          request.resource.data.keys().hasOnly(['token', 'platform', 'fcmTokenUpdatedAt', 'userId']) &&
+          request.resource.data.token is string;
+        allow delete: if isOwner(userId);
+      }
+      
+      // --- CART SUBCOLLECTION ---
+      match /cart/{itemId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+          request.resource.data.keys().hasOnly([
+            'productId','quantity','createdAt',
+            'variantId','variantTitle','variantOptions','variantSku',
+            'buyerNote','priceSnapshot'
+          ]) &&
+          request.resource.data.productId is string &&
+          request.resource.data.quantity is int &&
+          request.resource.data.quantity > 0 && request.resource.data.quantity <= 100 &&
+          request.resource.data.createdAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+      
+      // --- FAVORITES SUBCOLLECTION ---
+      match /favorites/{productId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+          request.resource.data.keys().hasOnly(['productId','dateFavorited']) &&
+          request.resource.data.productId is string &&
+          request.resource.data.dateFavorited is timestamp;
+        allow delete: if isOwner(userId);
+      }
+      
+      // --- ADDRESSES SUBCOLLECTION ---
+      match /addresses/{addressId} {
+        allow read: if isOwner(userId);
+        allow create, update: if false;  // All writes go through Cloud Functions (Admin SDK)
+        allow delete: if false;  // Deletes also go through delete_buyer_address CF
+      }
+      
+      // --- PAYOUTS SUBCOLLECTION (Seller payout history) ---
+      match /payouts/{payoutId} {
+        // Sellers can read their own payout history
+        allow read: if isOwner(userId) || isAdmin();
+        
+        // Only backend can create/update payouts
+        allow create, update: if false;
+        
+        // No deletes (audit trail)
+        allow delete: if false;
+      }
+
+      // --- WAREHOUSES SUBCOLLECTION (Seller shipping locations) ---
+      match /warehouses/{warehouseId} {
+        // Only the seller (owner) or admin can read their warehouses
+        // Buyers never read warehouse docs directly — only denormalized fields on products are public
+        allow read: if isOwner(userId) || isAdmin();
+        // FIX C-01: All creates/updates/deletes go exclusively through Cloud Functions (Admin SDK)
+        // which atomically enforce the single-default invariant via _clear_default_warehouse().
+        // Allowing direct client creates would let a seller bypass that logic and create
+        // multiple isDefault:true warehouses simultaneously.
+        allow create: if false;  // Routed through create_warehouse CF (enforces isDefault exclusivity)
+        allow update: if false;  // Routed through update_warehouse CF (enforces isDefault exclusivity)
+        allow delete: if false;  // All deletes via delete_warehouse CF (enforces stock/order checks); Admin SDK bypasses rules
+      }
+    }
+    
+    // ================================================================
+    // PRODUCTS COLLECTION
+    // ================================================================
+    match /products/{productId} {
+      // Admins/owners can read all; anyone can read active products.
+      // isAdmin() MUST come first — resource is null for non-existent docs and
+      // resource.data.lifecycleStatus would throw a null-reference error if evaluated first.
+      allow read: if isAdmin() || isProductOwner() || resource.data.lifecycleStatus == 'active';
+
+      // Only sellers can create products
+      // Must set correct sellerId
+      // Seller addresses can be from any country (buyers/shipping must be Canada)
+      // CAD-ONLY: All prices are in Canadian Dollars
+      allow create: if isAdmin() || (isSellerApproved() &&
+        request.resource.data.sellerId == request.auth.uid &&
+        // CRITICAL: Prevent client injecting arbitrary fields (e.g., rating)
+        request.resource.data.keys().hasOnly([
+          // Core
+          'name', 'nameF', 'price', 'compareAtPrice', 'description', 'descriptionF', 'imageUrls',
+          'sellerId', 'sellerAddress',
+          'categoryId', 'stockQuantity',
+          'keywords',
+          // Metadata
+          'createdAt', 'lifecycleStatus', 'taxCode',
+          // Shipping / delivery
+          'weightKg', 'lengthCm', 'widthCm', 'heightCm',
+          'isLocalDeliveryOnly', 'isPerishable', 'estimatedShipDays',
+          'deliveryOptions', 'minimumOrderQuantity', 'freeShipping',
+          'isDigital',
+          // Digital product fields
+          'digitalType', 'slug', 'digitalBuilds', 'bookSourceUrl', 'deviceLimit',
+          // Supplier / inventory (structured)
+          'supplier', 'inventory',
+          // Multi-warehouse fields
+          'sellerSku', 'warehouseIds', 'warehouseStock', 'shipFromCity', 'shipFromProvince',
+          'shipFromCountry', 'shipFromCountries'
+          // Note: isTrending/trendingAt are admin-only; removed from seller create allowlist
+        ]) &&
+        isStringWithLen(request.resource.data.name, 2, 120) &&
+        isStringWithLen(request.resource.data.description, 10, 4000) &&
+        (!request.resource.data.keys().hasAny(['sellerAddress']) || isValidSellerAddress(request.resource.data.sellerAddress)) &&
+        request.resource.data.lifecycleStatus in ['draft', 'under_review'] &&
+        request.resource.data.price > 0);
+      // Admin-only: lightweight update for just isTrending / trendingAt (no full doc validation needed)
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isTrending', 'trendingAt']);
+      // Admin full bypass: admins can update any product fields (admin panel operations, E2E test seeding)
+      allow update: if isAdmin();
+      allow update: if isAuthenticated() &&
+        ((resource.data.sellerId == request.auth.uid && isSellerApproved()) || isAdmin()) &&
+          // Only allow specific fields to be changed via client updates
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'nameF', 'price', 'compareAtPrice', 'description', 'descriptionF', 'imageUrls',
+            'sellerAddress', 'keywords',
+            'stockQuantity',
+            'weightKg', 'lengthCm', 'widthCm', 'heightCm',
+            'isLocalDeliveryOnly', 'isPerishable', 'estimatedShipDays',
+            'deliveryOptions', 'minimumOrderQuantity', 'freeShipping',
+            'isDigital', 'taxCode',
+            // Digital product fields
+            'digitalType', 'slug', 'digitalBuilds', 'bookSourceUrl', 'deviceLimit',
+            'supplier', 'inventory', 'lifecycleStatus',
+            // Multi-warehouse fields
+            'sellerSku', 'warehouseIds', 'warehouseStock', 'shipFromCity', 'shipFromProvince',
+            'shipFromCountry', 'shipFromCountries',
+            // Admin-only toggles (not editable by sellers)
+            'isTrending', 'trendingAt'
+          ]) &&
+          // Never allow ratings from client updates
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rating', 'ratingCount']) &&
+          // Admin-only toggles (not editable by sellers)
+          (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isTrending', 'trendingAt'])) &&
+          (isAdmin() || request.resource.data.sellerId == resource.data.sellerId) &&
+          isStringWithLen(request.resource.data.name, 2, 120) &&
+          isStringWithLen(request.resource.data.description, 10, 4000) &&
+          // sellerAddress is optional when warehouseIds is provided
+          (!request.resource.data.keys().hasAny(['sellerAddress']) ||
+           (request.resource.data.isDigital == true &&
+            isValidDigitalSellerAddress(request.resource.data.sellerAddress)) ||
+           isValidSellerAddress(request.resource.data.sellerAddress)) &&
+          request.resource.data.imageUrls is list &&
+          request.resource.data.imageUrls.size() >= 1 && request.resource.data.imageUrls.size() <= 5 &&
+          request.resource.data.keywords is list &&
+          request.resource.data.keywords.size() <= 30 &&
+          request.resource.data.stockQuantity >= 0 &&
+          // Validate categoryId is a valid integer (1-21)
+          request.resource.data.categoryId is int &&
+          request.resource.data.categoryId >= 1 &&
+          request.resource.data.categoryId <= 21 &&
+          // Validate product lifecycleStatus if changed
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lifecycleStatus']) ||
+           request.resource.data.lifecycleStatus in ['draft', 'under_review', 'approved', 'active', 'paused', 'archived', 'rejected']) &&
+          // FIX: Enforce positive price on update (prevents negative price attack)
+          request.resource.data.price > 0 &&
+          request.resource.data.price <= 100000 &&
+          // Sellers cannot set lifecycleStatus to active directly; admins can.
+          (isAdmin() || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['lifecycleStatus']) ||
+           request.resource.data.lifecycleStatus in ['draft', 'paused']) &&
+          !request.resource.data.keys().hasAny(['deletedAt']);
+
+      // Only product owner or admin can delete
+      allow delete: if isAuthenticated() &&
+        (isAdmin() || (resource.data.sellerId == request.auth.uid && isSellerApproved()));
+
+      // Inventory levels subcollection — backend-only writes (checkout, triggers, cancel)
+      match /inventoryLevels/{warehouseId} {
+        // Restrict reads to admins or owning seller; inventory should not be public.
+        allow read: if isAdmin() || (
+          isAuthenticated() &&
+          get(/databases/$(database)/documents/products/$(productId)).data.sellerId == request.auth.uid
+        );
+        allow write: if isAdmin();  // Admin bypass for E2E test seeding; else backend Admin SDK only
+      }
+
+      // SECURITY: Supplier private data — cost, SKU, URL, notes.
+      // NEVER readable by buyers. Only the owning seller or admin can read.
+      // Writes go through backend Admin SDK only (create_product_atomic / update_product).
+      match /supplier_private/{docId} {
+        allow read: if isAdmin() || (
+          isAuthenticated() &&
+          get(/databases/$(database)/documents/products/$(productId)).data.sellerId == request.auth.uid
+        );
+        allow write: if isAdmin();  // Backend Admin SDK only — never client-side
+      }
+    }
+
+    // ================================================================
+    // RETURN REQUESTS COLLECTION
+    // ================================================================
+    match /return_requests/{returnId} {
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+      // BUG-5 FIX: Block all client-side creates. All return requests must go through
+      // the create_return_request Cloud Function which enforces the 7-day window,
+      // delivery status checks, and all other business-rule validations.
+      allow create: if false;
+      // Sellers can only update tracking/status via backend Cloud Functions (Admin SDK bypasses rules).
+      // Direct client writes are blocked — use approve_return_request CF instead.
+      allow update: if isAdmin();
+    }
+    
+    // ================================================================
+    // ORDERS COLLECTION
+    // ================================================================
+    match /orders/{orderId} {
+      // Users can read their own orders
+      // Sellers can read orders containing their products
+      // Admins can read all orders
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.sellerIds.hasAny([request.auth.uid]) ||
+        isAdmin()
+      );
+      
+      // ONLY BACKEND CAN CREATE ORDERS (admins can create for testing/support)
+      allow create: if isAdmin();
+      
+      // Backend/admin only with state machine validation and field whitelisting
+      // Phase 3.5 fields: sellerCaptures, captureAttempts, requiresManualReview, fraudScore
+      allow update: if isAdmin() &&
+        // CRITICAL: Validate order status transitions using the CORRECT field name
+        isValidOrderStateTransition(resource.data.orderStatus, request.resource.data.orderStatus) &&
+        // CRITICAL: Whitelist updatable fields — prevent overwriting financial data, userId, paymentIntentId
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'orderStatus', 'paymentStatus',
+          'adminNote', 'updatedAt', 'cancelledAt', 'cancelledBy',
+          'cancellationReason', 'confirmedAt', 'shippedAt',
+          'trackingNumber', 'carrier', 'stockRestored',
+          // Phase 3.5 fields
+          'sellerCaptures', 'captureAttempts', 'requiresManualReview', 'fraudScore'
+        ]) &&
+        // Phase 3.5: Validate new fields if present
+        (!request.resource.data.keys().hasAny(['sellerCaptures']) || request.resource.data.sellerCaptures is map) &&
+        (!request.resource.data.keys().hasAny(['captureAttempts']) || request.resource.data.captureAttempts is int) &&
+        (!request.resource.data.keys().hasAny(['requiresManualReview']) || request.resource.data.requiresManualReview is bool) &&
+        (!request.resource.data.keys().hasAny(['fraudScore']) || (request.resource.data.fraudScore is int && request.resource.data.fraudScore >= 0 && request.resource.data.fraudScore <= 100)) &&
+        // CRITICAL: Immutable fields — admin cannot change financial data or ownership
+        // Field names MUST match what backend writes (cents-based fields)
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.totalAmountCents == resource.data.totalAmountCents &&
+        request.resource.data.subtotalCents == resource.data.subtotalCents &&
+        request.resource.data.items == resource.data.items;
+      
+      // No one can delete orders (only backend)
+      allow delete: if false;
+
+      // --- ORDERS PRIVATE SUBCOLLECTION ---
+      // Backend-only: stores checkout-time seller Stripe account snapshots.
+      // Must never be readable by clients (buyer or seller) — Admin SDK only.
+      // SECURITY FIX (HIGH-01): prevents seller Stripe account IDs leaking to buyers.
+      match /_private/{privateDocId} {
+        allow read, write: if false;
+      }
+    }
+    
+    // ================================================================
+    // SECURITY_ALERTS COLLECTION (Phase 3.5)
+    // ================================================================
+    match /security_alerts/{alertId} {
+      // Only admins can read security alerts
+      allow read: if isAdmin();
+      
+      // Only backend can create alerts
+      allow create: if false;
+      
+      // No updates or deletes (immutable audit log)
+      allow update, delete: if false;
+    }
+    
+    // ================================================================
+    // SELLER_METRICS COLLECTION (TASKS 11)
+    // ================================================================
+    match /seller_metrics/{sellerMetricsId} {
+      // Sellers can read their own metrics, Admins can read all
+      allow read: if isAdmin() || isOwner(sellerMetricsId);
+      
+      // Backend only
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // STOCK_NOTIFICATIONS COLLECTION (TASKS 07)
+    // ================================================================
+    match /stock_notifications/{notifId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      // Backend only handles creates via specific `subscribe_stock_notification` endpoint to ensure consistency
+      allow create, update: if false;
+      // Deletes are also backend-only to ensure server-side logging and auditability
+      allow delete: if false;
+    }
+
+    // ================================================================
+    // PRODUCT_QUESTIONS COLLECTION (TASKS 09)
+    // ================================================================
+    match /product_questions/{questionId} {
+      allow read: if isAuthenticated();
+      // FIX H-2: Field is 'question' (Fields.QUESTION_TEXT), not 'questionText'.
+      // Also guard that clients cannot inject a sellerId different from the
+      // actual product's sellerId — backend always derives it server-side.
+      // Direct client creates are blocked in practice (backend uses admin SDK),
+      // but this rule is kept as defence-in-depth.
+      allow create: if isAuthenticated() && request.resource.data.askerId == request.auth.uid
+        && hasActivePremium(request.auth.uid)
+        && request.resource.data.question.size() >= 10
+        && request.resource.data.question.size() <= 500
+        // Prevent clients from spoofing sellerId
+        && (!request.resource.data.keys().hasAny(['sellerId'])
+            || request.resource.data.sellerId ==
+               get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.sellerId);
+      allow update: if false;  // answers written by backend only
+      allow delete: if isAdmin();  // admins can purge abusive content
+    }
+    
+    // ================================================================
+    // ADMIN_LOGS COLLECTION
+    // ================================================================
+    match /admin_logs/{logId} {
+      // Only admins can read admin logs
+      allow read: if isAdmin();
+      
+      // Only backend can create logs
+      allow create: if false;
+      
+      // No updates or deletes (immutable audit log)
+      allow update, delete: if false;
+    }
+    
+    // ================================================================
+    // CONFIG COLLECTION (Platform Settings)
+    // ================================================================
+    match /config/{configId} {
+      // Admins can read all config
+      allow read: if isAdmin();
+      
+      // Authenticated users can read provider status (for payment UI)
+      allow read: if isAuthenticated() && configId == 'payment_providers';
+      
+      // Only backend can write config
+      allow write: if false;
+    }
+    
+    // ================================================================
+    // BACKEND-ONLY COLLECTIONS (explicit deny for defense-in-depth)
+    // ================================================================
+    match /product_ratings/{ratingId} {
+      allow read: if isAuthenticated();
+      allow create: if false;
+      allow delete: if isAdmin();
+      // N-03: Seller may update ONLY sellerReply + sellerReplyAt on their own product's rating,
+      // and only if no reply exists yet (once-only guard).
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sellerReply', 'sellerReplyAt']) &&
+        (!('sellerReply' in resource.data) || resource.data.sellerReply == null) &&
+        get(/databases/$(database)/documents/products/$(resource.data.productId)).data.sellerId == request.auth.uid;
+      // N-04: helpfulCount is backend-only (handled via Cloud Function)
+
+      // review_votes subcollection — backend-only (written by vote_review_helpful CF)
+      match /review_votes/{voterId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if false;
+      }
+    }
+    
+    match /refunds/{refundId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+    
+    match /webhook_logs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+    
+    match /webhook_events/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+    
+    match /rate_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    // Backend-only collections: payouts top-level & Algolia sync failures
+    match /payouts/{payoutId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /algolia_sync_failures/{failureId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // SELLER_RATINGS COLLECTION (F-315)
+    // Separate seller performance ratings from product ratings.
+    // Any authenticated user may read (public seller reputation).
+    // All writes are backend-only via Cloud Functions (Admin SDK bypasses rules).
+    // ================================================================
+    match /seller_ratings/{ratingId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // BACKEND-ONLY FINANCIAL / OPERATIONAL COLLECTIONS
+    // These collections exist in schema_constants.py and are written
+    // exclusively by backend Cloud Functions via Admin SDK.
+    // Explicit rules here are defence-in-depth on top of the catch-all.
+    // ================================================================
+    match /platform_debt/{debtId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /pending_redemptions/{redemptionId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /seller_skus/{docId} {
+      allow read, write: if false;
+    }
+
+    match /_cron_locks/{lockId} {
+      allow read, write: if false;
+    }
+
+    match /_cron_failures/{failureId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // LICENSES COLLECTION
+    // Buyers read their own licenses. Backend uses Admin SDK (bypasses rules).
+    // Admin can write for E2E test seeding (same pattern as subscriptions).
+    // ================================================================
+    match /licenses/{licenseKey} {
+      // Buyer reads their own license
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Admin reads and writes (Admin SDK + E2E seeding)
+      allow read, write: if isAdmin();
+    }
+
+    // ================================================================
+    // SUBSCRIPTIONS COLLECTION
+    // subscriptions/{userId} — premium subscription records.
+    // Backend writes on Stripe webhook. User reads own. No client writes.
+    // ================================================================
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin(); // Admin SDK + E2E seeding; Stripe webhook uses Admin SDK
+    }
+
+    // ================================================================
+    // CHATS COLLECTION
+    // chats/{chatId} — product-scoped buyer↔seller chat threads.
+    // Only premium buyers and the seller of the product can participate.
+    // Backend creates threads. Participants read/write messages.
+    // ================================================================
+    match /chats/{chatId} {
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+      // Chat threads created via backend only
+      allow create, update, delete: if false;
+
+      match /messages/{messageId} {
+        // Buyer (premium) and seller can read messages in their thread
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.buyerId == request.auth.uid ||
+          get(/databases/$(database)/documents/chats/$(chatId)).data.sellerId == request.auth.uid ||
+          isAdmin()
+        );
+        // CHAT-H2: Sender may soft-delete their own message (sets deleted=true, clears text/imageUrls).
+        // Only the four fields written by delete_message callable are permitted — no other mutations.
+        // Admin deletes (CHAT-H3) use Admin SDK and bypass rules entirely.
+        allow update: if isAuthenticated() &&
+          resource.data.senderId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['deleted', 'text', 'imageUrls', 'updatedAt']) &&
+          request.resource.data.deleted == true &&
+          request.resource.data.text == "" &&
+          request.resource.data.imageUrls == [];
+        // Create and hard-delete are backend-only
+        allow create, delete: if false;
+      }
+    }
+
+    // ================================================================
+    // MESSAGE_REPORTS COLLECTION (F-121)
+    // Reports are written via report_message CF only (Admin SDK).
+    // Admins can read to triage; no client writes ever.
+    // ================================================================
+    match /message_reports/{reportId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // BOOK_ACCESS_TOKENS COLLECTION
+    // Single-use redirect tokens — backend creates, no client read.
+    // ================================================================
+    match /book_access_tokens/{token} {
+      // No client reads — token is consumed server-side via redirect
+      allow read, write: if false;
+    }
+
+    // ================================================================
+    // SOFTWARE_ACCESS_TOKENS COLLECTION
+    // Backend-only access tokens for software products.
+    // ================================================================
+    match /software_access_tokens/{token} {
+      // No client reads — token is consumed server-side via redirect
+      allow read, write: if false;
+    }
+
+    // ================================================================
+    // MAIL LOGS COLLECTION (For E2E Testing)
+    // ================================================================
+    match /_mail_logs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // ================================================================
+    // COUPONS COLLECTION (N-07)
+    // Reads restricted to admin-only — all coupon validation is done
+    // server-side via apply_coupon callable; clients never read raw docs.
+    // All writes are backend-only via Cloud Functions.
+    // ================================================================
+    match /coupons/{couponId} {
+      allow read: if isAdmin();
+      allow write: if false;
+
+      // Per-user usage tracking — never readable by clients
+      match /coupon_uses/{userId} {
+        allow read, write: if false;
+      }
+    }
+
+    // ================================================================
+    // USER_SECURITY — Backend-only MFA secrets (TOTP, backup codes)
+    // NEVER readable by any client — Admin SDK only.
+    // ================================================================
+    match /user_security/{userId} {
+      allow read, write: if false;
+    }
+
+    // ================================================================
+    // SELLER_PROFILES — Seller-specific data split from users doc.
+    // Owner can read; writes exclusively via backend Admin SDK (no client self-promotion bypass).
+    // ================================================================
+    match /seller_profiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ================================================================
+    // PENDING PROFILES: Temporary pre-verification storage
+    // Client can write marketingOptIn before email verification.
+    // Only the owner can create; all other access is denied (backend reads via Admin SDK).
+    // ================================================================
+    match /pending_profiles/{userId} {
+      allow write: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['marketingOptIn', 'name', 'updatedAt'])
+        && (!request.resource.data.keys().hasAny(['marketingOptIn']) || request.resource.data.marketingOptIn is bool)
+        && (!request.resource.data.keys().hasAny(['name']) || request.resource.data.name is string)
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || request.resource.data.updatedAt == request.time);
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ================================================================
+    // CATCH-ALL: Deny access to any unmatched collections
+    // This prevents accidental data exposure if new collections are
+    // added without explicit rules. Defense-in-depth.
+    // ================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // ================================================================
+    // VALIDATION FUNCTIONS
+    // ================================================================
+  }
+}

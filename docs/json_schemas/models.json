@@ -1,0 +1,4357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orignagta.ca/schemas/models.json",
+  "title": "OrignaGTA Data Models",
+  "description": "JSON Schema for all shared data models between Python backend and Flutter frontend",
+  "version": "2.1.0",
+  "generated": "2026-02-05",
+  "$defs": {
+    "Address": {
+      "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+      "example": {
+        "apartment": "Apt 4B",
+        "city": "Toronto",
+        "country": "Canada",
+        "isDefault": true,
+        "label": "Home",
+        "phoneNumber": "4165551234",
+        "postalCode": "M5V 3A8",
+        "state": "ON",
+        "street": "123 Main Street"
+      },
+      "properties": {
+        "street": {
+          "description": "Street address",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Street",
+          "type": "string"
+        },
+        "apartment": {
+          "default": "",
+          "description": "Unit, Suite, Apt number",
+          "maxLength": 20,
+          "title": "Apartment",
+          "type": "string"
+        },
+        "city": {
+          "description": "City name",
+          "maxLength": 50,
+          "minLength": 2,
+          "title": "City",
+          "type": "string"
+        },
+        "state": {
+          "description": "Province/State code (e.g., ON, QC, BC)",
+          "maxLength": 2,
+          "minLength": 2,
+          "title": "State",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "Canadian postal code (e.g., M5V 3A8)",
+          "title": "Postalcode",
+          "type": "string"
+        },
+        "country": {
+          "default": "Canada",
+          "description": "Country name",
+          "title": "Country",
+          "type": "string"
+        },
+        "phoneNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Contact phone number for delivery",
+          "title": "Phonenumber"
+        },
+        "isDefault": {
+          "default": false,
+          "description": "Whether this is the default address",
+          "title": "Isdefault",
+          "type": "boolean"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 20,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Address label (Home, Work, Other)",
+          "title": "Label"
+        },
+        "latitude": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Latitude for mapping/delivery routing",
+          "title": "Latitude"
+        },
+        "longitude": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Longitude for mapping/delivery routing",
+          "title": "Longitude"
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "state",
+        "postalCode"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "AddressDetails": {
+      "description": "Simplified address for delivery info\nIncludes geolocation coordinates",
+      "properties": {
+        "street": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Street",
+          "type": "string"
+        },
+        "city": {
+          "maxLength": 50,
+          "minLength": 2,
+          "title": "City",
+          "type": "string"
+        },
+        "province": {
+          "maxLength": 2,
+          "minLength": 2,
+          "title": "Province",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "Postalcode",
+          "type": "string"
+        },
+        "latitude": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Latitude",
+          "type": "number"
+        },
+        "longitude": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "province",
+        "postalCode",
+        "latitude",
+        "longitude"
+      ],
+      "title": "AddressDetails",
+      "type": "object"
+    },
+    "OrderStatusEnum": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "in_transit",
+        "delivered",
+        "cancelled",
+        "failed",
+        "expired",
+        "refunded",
+        "partially_refunded"
+      ],
+      "description": "Order status values"
+    },
+    "PaymentStatusEnum": {
+      "type": "string",
+      "enum": [
+        "awaiting_payment",
+        "processing",
+        "paid",
+        "authorized",
+        "captured",
+        "payment_failed",
+        "refunded",
+        "session_expired"
+      ],
+      "description": "Payment status values"
+    },
+    "DeliveryStatusEnum": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "shipped",
+        "delivered"
+      ],
+      "description": "Delivery status values"
+    },
+    "ShippingApprovalStatusEnum": {
+      "type": "string",
+      "enum": [
+        "not_required",
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "description": "Shipping approval status values"
+    },
+    "UserRole": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "seller",
+        "buyer"
+      ],
+      "description": "User role values"
+    },
+    "SellerDeliveryOption": {
+      "$defs": {
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        }
+      },
+      "description": "Seller-specific delivery options with quantity-based pricing",
+      "example": {
+        "availableNationwide": true,
+        "description": "Standard shipping",
+        "estimatedDays": 5,
+        "maxItemsPerShipment": 10,
+        "quantityDiscounts": [],
+        "type": "standard",
+        "costCents": 599,
+        "additionalItemCostCents": 150
+      },
+      "properties": {
+        "type": {
+          "description": "Delivery type: pickup, standard, express, same_day",
+          "title": "Type",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of delivery option",
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "estimatedDays": {
+          "description": "Estimated delivery days",
+          "maximum": 90,
+          "minimum": 0,
+          "title": "Estimateddays",
+          "type": "integer"
+        },
+        "quantityDiscounts": {
+          "description": "Quantity-based shipping discounts",
+          "items": {
+            "$ref": "#/$defs/ShippingQuantityDiscount"
+          },
+          "title": "Quantitydiscounts",
+          "type": "array"
+        },
+        "maxItemsPerShipment": {
+          "default": 0,
+          "description": "Max items before cost increases (0 = no limit)",
+          "minimum": 0,
+          "title": "Maxitemspershipment",
+          "type": "integer"
+        },
+        "availableNationwide": {
+          "default": true,
+          "description": "Whether option is available for international suppliers",
+          "title": "Availableinternational",
+          "type": "boolean"
+        },
+        "costCents": {
+          "description": "Base cost in cents (CAD)",
+          "minimum": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "additionalItemCostCents": {
+          "default": 0.0,
+          "description": "Additional cost in cents per item after maxItemsPerShipment",
+          "minimum": 0,
+          "title": "Additionalitemcost",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "description",
+        "costCents",
+        "estimatedDays"
+      ],
+      "title": "SellerDeliveryOption",
+      "type": "object"
+    },
+    "Product": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "InventoryConfig": {
+          "description": "Inventory management configuration",
+          "example": {
+            "allowBackorder": false,
+            "lowStockThreshold": 5,
+            "managed": true,
+            "reservationHoldMinutes": 30,
+            "trackQuantity": true
+          },
+          "properties": {
+            "managed": {
+              "default": true,
+              "description": "Whether inventory is actively managed",
+              "title": "Managed",
+              "type": "boolean"
+            },
+            "trackQuantity": {
+              "default": true,
+              "description": "Track stock quantity (false = unlimited)",
+              "title": "Trackquantity",
+              "type": "boolean"
+            },
+            "allowBackorder": {
+              "default": false,
+              "description": "Allow orders when out of stock",
+              "title": "Allowbackorder",
+              "type": "boolean"
+            },
+            "lowStockThreshold": {
+              "default": 5,
+              "description": "Alert threshold for low stock",
+              "maximum": 1000,
+              "minimum": 0,
+              "title": "Lowstockthreshold",
+              "type": "integer"
+            },
+            "reservationHoldMinutes": {
+              "default": 30,
+              "description": "How long to hold inventory during checkout",
+              "maximum": 120,
+              "minimum": 5,
+              "title": "Reservationholdminutes",
+              "type": "integer"
+            }
+          },
+          "title": "InventoryConfig",
+          "type": "object"
+        },
+        "SellerDeliveryOption": {
+          "description": "Seller-specific delivery options with quantity-based pricing",
+          "example": {
+            "availableNationwide": true,
+            "description": "Standard shipping",
+            "estimatedDays": 5,
+            "maxItemsPerShipment": 10,
+            "quantityDiscounts": [],
+            "type": "standard",
+            "costCents": 599,
+            "additionalItemCostCents": 150
+          },
+          "properties": {
+            "type": {
+              "description": "Delivery type: pickup, standard, express, same_day",
+              "title": "Type",
+              "type": "string"
+            },
+            "description": {
+              "description": "Description of delivery option",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "estimatedDays": {
+              "description": "Estimated delivery days",
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Estimateddays",
+              "type": "integer"
+            },
+            "quantityDiscounts": {
+              "description": "Quantity-based shipping discounts",
+              "items": {
+                "$ref": "#/$defs/ShippingQuantityDiscount"
+              },
+              "title": "Quantitydiscounts",
+              "type": "array"
+            },
+            "maxItemsPerShipment": {
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)",
+              "minimum": 0,
+              "title": "Maxitemspershipment",
+              "type": "integer"
+            },
+            "availableNationwide": {
+              "default": true,
+              "description": "Whether option is available for international suppliers",
+              "title": "Availableinternational",
+              "type": "boolean"
+            },
+            "costCents": {
+              "description": "Base cost in cents (CAD)",
+              "minimum": 0,
+              "title": "Cost",
+              "type": "integer"
+            },
+            "additionalItemCostCents": {
+              "default": 0.0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment",
+              "minimum": 0,
+              "title": "Additionalitemcost",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "description",
+            "costCents",
+            "estimatedDays"
+          ],
+          "title": "SellerDeliveryOption",
+          "type": "object"
+        },
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        },
+        "SupplierInfo": {
+          "description": "Supplier information for dropshipping/international products.\nIMPORTANT: The currency field is for tracking what you PAY the supplier.\nAll selling prices to customers are in CAD only.",
+          "example": {
+            "cost": 15.99,
+            "currency": "USD",
+            "hasTracking": true,
+            "notes": "Good quality supplier",
+            "shippingDays": "15-30",
+            "supplierSku": "ABC123456",
+            "supplierUrl": "https://aliexpress.com/item/123.html",
+            "type": "aliexpress"
+          },
+          "properties": {
+            "type": {
+              "description": "Supplier platform: aliexpress, alibaba, 1688, dhgate, temu, amazon_usa, custom, etc.",
+              "title": "Type",
+              "type": "string"
+            },
+            "supplierSku": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Supplier's product SKU",
+              "title": "Suppliersku"
+            },
+            "supplierUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Direct URL to supplier product",
+              "title": "Supplierurl"
+            },
+            "cost": {
+              "anyOf": [
+                {
+                  "maximum": 100000,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Cost price from supplier (what seller pays)",
+              "title": "Cost"
+            },
+            "currency": {
+              "default": "USD",
+              "description": "Currency of SUPPLIER cost (for tracking). Selling price is always CAD.",
+              "title": "Currency",
+              "type": "string"
+            },
+            "shippingDays": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Estimated shipping days range (e.g., '7-15')",
+              "title": "Shippingdays"
+            },
+            "hasTracking": {
+              "default": false,
+              "description": "Whether supplier provides tracking",
+              "title": "Hastracking",
+              "type": "boolean"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Internal notes about supplier",
+              "title": "Notes"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "title": "SupplierInfo",
+          "type": "object"
+        }
+      },
+      "description": "Complete product model\nSingle source of truth for product data",
+      "example": {
+        "categoryId": 1,
+        "createdAt": "2026-02-01T10:00:00Z",
+        "description": "Fresh organic apples from local farm",
+        "imageUrls": [
+          "https://example.com/image1.jpg"
+        ],
+        "isActive": true,
+        "name": "Organic Apples",
+        "price": 4.99,
+        "productId": "prod_123abc",
+        "rating": 4.5,
+        "sellerAddress": {
+          "city": "Toronto",
+          "country": "Canada",
+          "postalCode": "M5V 3A8",
+          "state": "ON",
+          "street": "123 Farm Road"
+        },
+        "sellerId": "seller_123",
+        "stockQuantity": 100
+      },
+      "properties": {
+        "productId": {
+          "description": "Unique product identifier",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Productid",
+          "type": "string"
+        },
+        "name": {
+          "description": "Product name",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "price": {
+          "description": "Price in CAD",
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Price",
+          "type": "number"
+        },
+        "description": {
+          "description": "Product description",
+          "maxLength": 4000,
+          "minLength": 10,
+          "title": "Description",
+          "type": "string"
+        },
+        "imageUrls": {
+          "description": "Product image URLs (1-5 images)",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Imageurls",
+          "type": "array"
+        },
+        "sellerId": {
+          "description": "Seller user ID",
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "sellerAddress": {
+          "$ref": "#/$defs/Address",
+          "description": "Seller's address for shipping calculations"
+        },
+        "categoryId": {
+          "description": "Product category ID (1-21)",
+          "maximum": 21,
+          "minimum": 1,
+          "title": "Categoryid",
+          "type": "integer"
+        },
+        "stockQuantity": {
+          "description": "Available stock quantity",
+          "minimum": 0,
+          "title": "Stockquantity",
+          "type": "integer"
+        },
+        "rating": {
+          "default": 0.0,
+          "description": "Average product rating (0-5)",
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Rating",
+          "type": "number"
+        },
+        "createdAt": {
+          "description": "Product creation timestamp",
+          "format": "date-time",
+          "title": "Datecreated",
+          "type": "string"
+        },
+        "isActive": {
+          "default": true,
+          "description": "Whether product is active and visible",
+          "title": "Isactive",
+          "type": "boolean"
+        },
+        "weightKg": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Product weight in kilograms",
+          "title": "Weightkg"
+        },
+        "lengthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Package length in centimeters",
+          "title": "Lengthcm"
+        },
+        "widthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Package width in centimeters",
+          "title": "Widthcm"
+        },
+        "heightCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Package height in centimeters",
+          "title": "Heightcm"
+        },
+        "isLocalDeliveryOnly": {
+          "default": false,
+          "description": "Only available for local delivery",
+          "title": "Islocaldeliveryonly",
+          "type": "boolean"
+        },
+        "isPerishable": {
+          "default": false,
+          "description": "Product is perishable (affects shipping)",
+          "title": "Isperishable",
+          "type": "boolean"
+        },
+        "estimatedShipDays": {
+          "default": 3,
+          "description": "Estimated days to ship",
+          "maximum": 90,
+          "minimum": 0,
+          "title": "Estimatedshipdays",
+          "type": "integer"
+        },
+        "deliveryOptions": {
+          "description": "Seller-specific delivery options",
+          "items": {
+            "$ref": "#/$defs/SellerDeliveryOption"
+          },
+          "title": "Deliveryoptions",
+          "type": "array"
+        },
+        "minimumOrderQuantity": {
+          "default": 1,
+          "description": "Minimum order quantity",
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Minimumorderquantity",
+          "type": "integer"
+        },
+        "freeShipping": {
+          "default": false,
+          "description": "Free shipping offered by seller",
+          "title": "Freeshipping",
+          "type": "boolean"
+        },
+        "isDigital": {
+          "default": false,
+          "description": "Whether this is a digital product (no shipping required)",
+          "title": "Isdigital",
+          "type": "boolean"
+        },
+        "taxCode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tax code override for specific products",
+          "title": "Taxcode"
+        },
+        "keywords": {
+          "description": "Search keywords for Algolia",
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "supplier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupplierInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Supplier information for dropshipping/marketplace products"
+        },
+        "inventory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InventoryConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inventory management configuration"
+        },
+        "status": {
+          "default": "active",
+          "description": "Product status: draft, active, paused, archived, out_of_stock",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "productId",
+        "name",
+        "price",
+        "description",
+        "imageUrls",
+        "sellerId",
+        "sellerAddress",
+        "categoryId",
+        "stockQuantity"
+      ],
+      "title": "Product",
+      "type": "object"
+    },
+    "ProductCreate": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "InventoryConfig": {
+          "description": "Inventory management configuration",
+          "example": {
+            "allowBackorder": false,
+            "lowStockThreshold": 5,
+            "managed": true,
+            "reservationHoldMinutes": 30,
+            "trackQuantity": true
+          },
+          "properties": {
+            "managed": {
+              "default": true,
+              "description": "Whether inventory is actively managed",
+              "title": "Managed",
+              "type": "boolean"
+            },
+            "trackQuantity": {
+              "default": true,
+              "description": "Track stock quantity (false = unlimited)",
+              "title": "Trackquantity",
+              "type": "boolean"
+            },
+            "allowBackorder": {
+              "default": false,
+              "description": "Allow orders when out of stock",
+              "title": "Allowbackorder",
+              "type": "boolean"
+            },
+            "lowStockThreshold": {
+              "default": 5,
+              "description": "Alert threshold for low stock",
+              "maximum": 1000,
+              "minimum": 0,
+              "title": "Lowstockthreshold",
+              "type": "integer"
+            },
+            "reservationHoldMinutes": {
+              "default": 30,
+              "description": "How long to hold inventory during checkout",
+              "maximum": 120,
+              "minimum": 5,
+              "title": "Reservationholdminutes",
+              "type": "integer"
+            }
+          },
+          "title": "InventoryConfig",
+          "type": "object"
+        },
+        "SellerDeliveryOption": {
+          "description": "Seller-specific delivery options with quantity-based pricing",
+          "example": {
+            "availableNationwide": true,
+            "description": "Standard shipping",
+            "estimatedDays": 5,
+            "maxItemsPerShipment": 10,
+            "quantityDiscounts": [],
+            "type": "standard",
+            "costCents": 599,
+            "additionalItemCostCents": 150
+          },
+          "properties": {
+            "type": {
+              "description": "Delivery type: pickup, standard, express, same_day",
+              "title": "Type",
+              "type": "string"
+            },
+            "description": {
+              "description": "Description of delivery option",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "estimatedDays": {
+              "description": "Estimated delivery days",
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Estimateddays",
+              "type": "integer"
+            },
+            "quantityDiscounts": {
+              "description": "Quantity-based shipping discounts",
+              "items": {
+                "$ref": "#/$defs/ShippingQuantityDiscount"
+              },
+              "title": "Quantitydiscounts",
+              "type": "array"
+            },
+            "maxItemsPerShipment": {
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)",
+              "minimum": 0,
+              "title": "Maxitemspershipment",
+              "type": "integer"
+            },
+            "availableNationwide": {
+              "default": true,
+              "description": "Whether option is available for international suppliers",
+              "title": "Availableinternational",
+              "type": "boolean"
+            },
+            "costCents": {
+              "description": "Base cost in cents (CAD)",
+              "minimum": 0,
+              "title": "Cost",
+              "type": "integer"
+            },
+            "additionalItemCostCents": {
+              "default": 0.0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment",
+              "minimum": 0,
+              "title": "Additionalitemcost",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "description",
+            "costCents",
+            "estimatedDays"
+          ],
+          "title": "SellerDeliveryOption",
+          "type": "object"
+        },
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        },
+        "SupplierInfo": {
+          "description": "Supplier information for dropshipping/international products.\nIMPORTANT: The currency field is for tracking what you PAY the supplier.\nAll selling prices to customers are in CAD only.",
+          "example": {
+            "cost": 15.99,
+            "currency": "USD",
+            "hasTracking": true,
+            "notes": "Good quality supplier",
+            "shippingDays": "15-30",
+            "supplierSku": "ABC123456",
+            "supplierUrl": "https://aliexpress.com/item/123.html",
+            "type": "aliexpress"
+          },
+          "properties": {
+            "type": {
+              "description": "Supplier platform: aliexpress, alibaba, 1688, dhgate, temu, amazon_usa, custom, etc.",
+              "title": "Type",
+              "type": "string"
+            },
+            "supplierSku": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Supplier's product SKU",
+              "title": "Suppliersku"
+            },
+            "supplierUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Direct URL to supplier product",
+              "title": "Supplierurl"
+            },
+            "cost": {
+              "anyOf": [
+                {
+                  "maximum": 100000,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Cost price from supplier (what seller pays)",
+              "title": "Cost"
+            },
+            "currency": {
+              "default": "USD",
+              "description": "Currency of SUPPLIER cost (for tracking). Selling price is always CAD.",
+              "title": "Currency",
+              "type": "string"
+            },
+            "shippingDays": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Estimated shipping days range (e.g., '7-15')",
+              "title": "Shippingdays"
+            },
+            "hasTracking": {
+              "default": false,
+              "description": "Whether supplier provides tracking",
+              "title": "Hastracking",
+              "type": "boolean"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Internal notes about supplier",
+              "title": "Notes"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "title": "SupplierInfo",
+          "type": "object"
+        }
+      },
+      "description": "Model for creating new products\n(excludes productId and createdAt which are generated)\nSellers can be from any country \u2014 no country restriction on seller addresses",
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "price": {
+          "exclusiveMinimum": 0,
+          "maximum": 100000,
+          "title": "Price",
+          "type": "number"
+        },
+        "description": {
+          "maxLength": 4000,
+          "minLength": 10,
+          "title": "Description",
+          "type": "string"
+        },
+        "imageUrls": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Imageurls",
+          "type": "array"
+        },
+        "sellerId": {
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "sellerAddress": {
+          "$ref": "#/$defs/Address"
+        },
+        "categoryId": {
+          "maximum": 21,
+          "minimum": 1,
+          "title": "Categoryid",
+          "type": "integer"
+        },
+        "stockQuantity": {
+          "minimum": 0,
+          "title": "Stockquantity",
+          "type": "integer"
+        },
+        "rating": {
+          "default": 0.0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Rating",
+          "type": "number"
+        },
+        "isActive": {
+          "default": true,
+          "title": "Isactive",
+          "type": "boolean"
+        },
+        "weightKg": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weightkg"
+        },
+        "lengthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lengthcm"
+        },
+        "widthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Widthcm"
+        },
+        "heightCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Heightcm"
+        },
+        "isLocalDeliveryOnly": {
+          "default": false,
+          "title": "Islocaldeliveryonly",
+          "type": "boolean"
+        },
+        "isPerishable": {
+          "default": false,
+          "title": "Isperishable",
+          "type": "boolean"
+        },
+        "estimatedShipDays": {
+          "default": 3,
+          "maximum": 90,
+          "minimum": 0,
+          "title": "Estimatedshipdays",
+          "type": "integer"
+        },
+        "deliveryOptions": {
+          "items": {
+            "$ref": "#/$defs/SellerDeliveryOption"
+          },
+          "title": "Deliveryoptions",
+          "type": "array"
+        },
+        "minimumOrderQuantity": {
+          "default": 1,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Minimumorderquantity",
+          "type": "integer"
+        },
+        "freeShipping": {
+          "default": false,
+          "title": "Freeshipping",
+          "type": "boolean"
+        },
+        "isDigital": {
+          "default": false,
+          "title": "Isdigital",
+          "type": "boolean"
+        },
+        "taxCode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Taxcode"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "supplier": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupplierInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "inventory": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InventoryConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "default": "active",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "price",
+        "description",
+        "imageUrls",
+        "sellerId",
+        "sellerAddress",
+        "categoryId",
+        "stockQuantity"
+      ],
+      "title": "ProductCreate",
+      "type": "object"
+    },
+    "OrderItem": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "DeliveryStatusEnum": {
+          "description": "Delivery status for individual items",
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered"
+          ],
+          "title": "DeliveryStatusEnum",
+          "type": "string"
+        },
+        "SellerDeliveryOption": {
+          "description": "Seller-specific delivery options with quantity-based pricing",
+          "example": {
+            "availableNationwide": true,
+            "description": "Standard shipping",
+            "estimatedDays": 5,
+            "maxItemsPerShipment": 10,
+            "quantityDiscounts": [],
+            "type": "standard",
+            "costCents": 599,
+            "additionalItemCostCents": 150
+          },
+          "properties": {
+            "type": {
+              "description": "Delivery type: pickup, standard, express, same_day",
+              "title": "Type",
+              "type": "string"
+            },
+            "description": {
+              "description": "Description of delivery option",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "estimatedDays": {
+              "description": "Estimated delivery days",
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Estimateddays",
+              "type": "integer"
+            },
+            "quantityDiscounts": {
+              "description": "Quantity-based shipping discounts",
+              "items": {
+                "$ref": "#/$defs/ShippingQuantityDiscount"
+              },
+              "title": "Quantitydiscounts",
+              "type": "array"
+            },
+            "maxItemsPerShipment": {
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)",
+              "minimum": 0,
+              "title": "Maxitemspershipment",
+              "type": "integer"
+            },
+            "availableNationwide": {
+              "default": true,
+              "description": "Whether option is available for international suppliers",
+              "title": "Availableinternational",
+              "type": "boolean"
+            },
+            "costCents": {
+              "description": "Base cost in cents (CAD)",
+              "minimum": 0,
+              "title": "Cost",
+              "type": "integer"
+            },
+            "additionalItemCostCents": {
+              "default": 0.0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment",
+              "minimum": 0,
+              "title": "Additionalitemcost",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "description",
+            "costCents",
+            "estimatedDays"
+          ],
+          "title": "SellerDeliveryOption",
+          "type": "object"
+        },
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        }
+      },
+      "description": "Individual item in an order \u2014 immutable snapshot at time of purchase.",
+      "example": {
+        "deliveryStatus": "pending",
+        "description": "Fresh organic apples",
+        "imageUrls": [
+          "https://example.com/image.jpg"
+        ],
+        "name": "Organic Apples",
+        "price": 4.99,
+        "productId": "prod_123",
+        "quantity": 2,
+        "sellerAddress": {
+          "city": "Toronto",
+          "country": "Canada",
+          "postalCode": "M5V 3A8",
+          "state": "ON",
+          "street": "123 Farm Road"
+        },
+        "sellerId": "seller_123"
+      },
+      "properties": {
+        "productId": {
+          "minLength": 1,
+          "title": "Productid",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 4000,
+          "title": "Description",
+          "type": "string"
+        },
+        "price": {
+          "exclusiveMinimum": 0,
+          "title": "Price",
+          "type": "number"
+        },
+        "quantity": {
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "imageUrls": {
+          "description": "Product image URLs",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Imageurls",
+          "type": "array"
+        },
+        "sellerId": {
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "sellerAddress": {
+          "$ref": "#/$defs/Address"
+        },
+        "deliveryStatus": {
+          "$ref": "#/$defs/DeliveryStatusEnum",
+          "default": "pending"
+        },
+        "trackingNumber": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trackingnumber"
+        },
+        "confirmedByBuyer": {
+          "default": false,
+          "title": "Confirmedbybuyer",
+          "type": "boolean"
+        },
+        "weightKg": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weightkg"
+        },
+        "lengthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lengthcm"
+        },
+        "widthCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Widthcm"
+        },
+        "heightCm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Heightcm"
+        },
+        "isLocalDeliveryOnly": {
+          "default": false,
+          "title": "Islocaldeliveryonly",
+          "type": "boolean"
+        },
+        "isPerishable": {
+          "default": false,
+          "title": "Isperishable",
+          "type": "boolean"
+        },
+        "estimatedShipDays": {
+          "default": 3,
+          "minimum": 0,
+          "title": "Estimatedshipdays",
+          "type": "integer"
+        },
+        "deliveryOptions": {
+          "items": {
+            "$ref": "#/$defs/SellerDeliveryOption"
+          },
+          "title": "Deliveryoptions",
+          "type": "array"
+        },
+        "minimumOrderQuantity": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Minimumorderquantity",
+          "type": "integer"
+        },
+        "freeShipping": {
+          "default": false,
+          "title": "Freeshipping",
+          "type": "boolean"
+        },
+        "isDigital": {
+          "default": false,
+          "description": "Whether this item is a digital product",
+          "title": "Isdigital",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "productId",
+        "name",
+        "description",
+        "price",
+        "quantity",
+        "imageUrls",
+        "sellerId",
+        "sellerAddress"
+      ],
+      "title": "OrderItem",
+      "type": "object"
+    },
+    "Taxes": {
+      "description": "Tax breakdown for an order (Canadian taxes).",
+      "properties": {
+        "GST": {
+          "default": 0.0,
+          "description": "Goods and Services Tax (Federal)",
+          "minimum": 0,
+          "title": "Gst",
+          "type": "number"
+        },
+        "PST": {
+          "default": 0.0,
+          "description": "Provincial Sales Tax",
+          "minimum": 0,
+          "title": "Pst",
+          "type": "number"
+        },
+        "HST": {
+          "default": 0.0,
+          "description": "Harmonized Sales Tax",
+          "minimum": 0,
+          "title": "Hst",
+          "type": "number"
+        },
+        "QST": {
+          "default": 0.0,
+          "description": "Quebec Sales Tax",
+          "minimum": 0,
+          "title": "Qst",
+          "type": "number"
+        }
+      },
+      "title": "Taxes",
+      "type": "object"
+    },
+    "Ratings": {
+      "description": "Product rating within an order.",
+      "properties": {
+        "productId": {
+          "minLength": 1,
+          "title": "Productid",
+          "type": "string"
+        },
+        "rating": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Rating",
+          "type": "number"
+        },
+        "review": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "productId",
+        "rating"
+      ],
+      "title": "Ratings",
+      "type": "object"
+    },
+    "SellerPayout": {
+      "description": "Payout information for a seller in an order. All money in cents.",
+      "example": {
+        "amountCents": 4750,
+        "netAmountCents": 4631,
+        "platformFeeCents": 119,
+        "sellerId": "seller_123",
+        "status": "pending",
+        "stripeAccountId": "acct_123"
+      },
+      "properties": {
+        "sellerId": {
+          "minLength": 1,
+          "title": "Sellerid",
+          "type": "string"
+        },
+        "stripeAccountId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripeaccountid"
+        },
+        "amountCents": {
+          "description": "Gross amount in cents",
+          "minimum": 0,
+          "title": "Amountcents",
+          "type": "integer"
+        },
+        "platformFeeCents": {
+          "description": "Platform fee in cents",
+          "minimum": 0,
+          "title": "Platformfeecents",
+          "type": "integer"
+        },
+        "netAmountCents": {
+          "description": "Net amount in cents",
+          "minimum": 0,
+          "title": "Netamountcents",
+          "type": "integer"
+        },
+        "status": {
+          "default": "pending",
+          "description": "Payout status: pending, processing, completed, failed",
+          "title": "Status",
+          "type": "string"
+        },
+        "payoutDate": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payoutdate"
+        },
+        "stripeTransferId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripetransferid"
+        },
+        "failureReason": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failurereason"
+        }
+      },
+      "required": [
+        "sellerId",
+        "amountCents",
+        "platformFeeCents",
+        "netAmountCents"
+      ],
+      "title": "SellerPayout",
+      "type": "object"
+    },
+    "Order": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "DeliveryStatusEnum": {
+          "description": "Delivery status for individual items",
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered"
+          ],
+          "title": "DeliveryStatusEnum",
+          "type": "string"
+        },
+        "OrderItem": {
+          "description": "Individual item in an order \u2014 immutable snapshot at time of purchase.",
+          "example": {
+            "deliveryStatus": "pending",
+            "description": "Fresh organic apples",
+            "imageUrls": [
+              "https://example.com/image.jpg"
+            ],
+            "name": "Organic Apples",
+            "price": 4.99,
+            "productId": "prod_123",
+            "quantity": 2,
+            "sellerAddress": {
+              "city": "Toronto",
+              "country": "Canada",
+              "postalCode": "M5V 3A8",
+              "state": "ON",
+              "street": "123 Farm Road"
+            },
+            "sellerId": "seller_123"
+          },
+          "properties": {
+            "productId": {
+              "minLength": 1,
+              "title": "Productid",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 120,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "title": "Description",
+              "type": "string"
+            },
+            "price": {
+              "exclusiveMinimum": 0,
+              "title": "Price",
+              "type": "number"
+            },
+            "quantity": {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "title": "Quantity",
+              "type": "integer"
+            },
+            "imageUrls": {
+              "description": "Product image URLs",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Imageurls",
+              "type": "array"
+            },
+            "sellerId": {
+              "minLength": 1,
+              "title": "Sellerid",
+              "type": "string"
+            },
+            "sellerAddress": {
+              "$ref": "#/$defs/Address"
+            },
+            "deliveryStatus": {
+              "$ref": "#/$defs/DeliveryStatusEnum",
+              "default": "pending"
+            },
+            "trackingNumber": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Trackingnumber"
+            },
+            "confirmedByBuyer": {
+              "default": false,
+              "title": "Confirmedbybuyer",
+              "type": "boolean"
+            },
+            "weightKg": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Weightkg"
+            },
+            "lengthCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Lengthcm"
+            },
+            "widthCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Widthcm"
+            },
+            "heightCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Heightcm"
+            },
+            "isLocalDeliveryOnly": {
+              "default": false,
+              "title": "Islocaldeliveryonly",
+              "type": "boolean"
+            },
+            "isPerishable": {
+              "default": false,
+              "title": "Isperishable",
+              "type": "boolean"
+            },
+            "estimatedShipDays": {
+              "default": 3,
+              "minimum": 0,
+              "title": "Estimatedshipdays",
+              "type": "integer"
+            },
+            "deliveryOptions": {
+              "items": {
+                "$ref": "#/$defs/SellerDeliveryOption"
+              },
+              "title": "Deliveryoptions",
+              "type": "array"
+            },
+            "minimumOrderQuantity": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Minimumorderquantity",
+              "type": "integer"
+            },
+            "freeShipping": {
+              "default": false,
+              "title": "Freeshipping",
+              "type": "boolean"
+            },
+            "isDigital": {
+              "default": false,
+              "description": "Whether this item is a digital product",
+              "title": "Isdigital",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "productId",
+            "name",
+            "description",
+            "price",
+            "quantity",
+            "imageUrls",
+            "sellerId",
+            "sellerAddress"
+          ],
+          "title": "OrderItem",
+          "type": "object"
+        },
+        "OrderStatusEnum": {
+          "description": "Order status values",
+          "enum": [
+            "pending",
+            "confirmed",
+            "processing",
+            "shipped",
+            "in_transit",
+            "delivered",
+            "cancelled",
+            "failed",
+            "expired",
+            "refunded",
+            "partially_refunded"
+          ],
+          "title": "OrderStatusEnum",
+          "type": "string"
+        },
+        "PaymentStatusEnum": {
+          "description": "Payment status values",
+          "enum": [
+            "awaiting_payment",
+            "processing",
+            "paid",
+            "authorized",
+            "captured",
+            "payment_failed",
+            "refunded",
+            "session_expired"
+          ],
+          "title": "PaymentStatusEnum",
+          "type": "string"
+        },
+        "Ratings": {
+          "description": "Product rating within an order.",
+          "properties": {
+            "productId": {
+              "minLength": 1,
+              "title": "Productid",
+              "type": "string"
+            },
+            "rating": {
+              "maximum": 5,
+              "minimum": 0,
+              "title": "Rating",
+              "type": "number"
+            },
+            "review": {
+              "anyOf": [
+                {
+                  "maxLength": 1000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Review"
+            },
+            "createdAt": {
+              "format": "date-time",
+              "title": "Createdat",
+              "type": "string"
+            }
+          },
+          "required": [
+            "productId",
+            "rating"
+          ],
+          "title": "Ratings",
+          "type": "object"
+        },
+        "SellerDeliveryOption": {
+          "description": "Seller-specific delivery options with quantity-based pricing",
+          "example": {
+            "availableNationwide": true,
+            "description": "Standard shipping",
+            "estimatedDays": 5,
+            "maxItemsPerShipment": 10,
+            "quantityDiscounts": [],
+            "type": "standard",
+            "costCents": 599,
+            "additionalItemCostCents": 150
+          },
+          "properties": {
+            "type": {
+              "description": "Delivery type: pickup, standard, express, same_day",
+              "title": "Type",
+              "type": "string"
+            },
+            "description": {
+              "description": "Description of delivery option",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "estimatedDays": {
+              "description": "Estimated delivery days",
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Estimateddays",
+              "type": "integer"
+            },
+            "quantityDiscounts": {
+              "description": "Quantity-based shipping discounts",
+              "items": {
+                "$ref": "#/$defs/ShippingQuantityDiscount"
+              },
+              "title": "Quantitydiscounts",
+              "type": "array"
+            },
+            "maxItemsPerShipment": {
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)",
+              "minimum": 0,
+              "title": "Maxitemspershipment",
+              "type": "integer"
+            },
+            "availableNationwide": {
+              "default": true,
+              "description": "Whether option is available for international suppliers",
+              "title": "Availableinternational",
+              "type": "boolean"
+            },
+            "costCents": {
+              "description": "Base cost in cents (CAD)",
+              "minimum": 0,
+              "title": "Cost",
+              "type": "integer"
+            },
+            "additionalItemCostCents": {
+              "default": 0.0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment",
+              "minimum": 0,
+              "title": "Additionalitemcost",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "description",
+            "costCents",
+            "estimatedDays"
+          ],
+          "title": "SellerDeliveryOption",
+          "type": "object"
+        },
+        "SellerPayout": {
+          "description": "Payout information for a seller in an order. All money in cents.",
+          "example": {
+            "amountCents": 4750,
+            "netAmountCents": 4631,
+            "platformFeeCents": 119,
+            "sellerId": "seller_123",
+            "status": "pending",
+            "stripeAccountId": "acct_123"
+          },
+          "properties": {
+            "sellerId": {
+              "minLength": 1,
+              "title": "Sellerid",
+              "type": "string"
+            },
+            "stripeAccountId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Stripeaccountid"
+            },
+            "amountCents": {
+              "description": "Gross amount in cents",
+              "minimum": 0,
+              "title": "Amountcents",
+              "type": "integer"
+            },
+            "platformFeeCents": {
+              "description": "Platform fee in cents",
+              "minimum": 0,
+              "title": "Platformfeecents",
+              "type": "integer"
+            },
+            "netAmountCents": {
+              "description": "Net amount in cents",
+              "minimum": 0,
+              "title": "Netamountcents",
+              "type": "integer"
+            },
+            "status": {
+              "default": "pending",
+              "description": "Payout status: pending, processing, completed, failed",
+              "title": "Status",
+              "type": "string"
+            },
+            "payoutDate": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Payoutdate"
+            },
+            "stripeTransferId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Stripetransferid"
+            },
+            "failureReason": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Failurereason"
+            }
+          },
+          "required": [
+            "sellerId",
+            "amountCents",
+            "platformFeeCents",
+            "netAmountCents"
+          ],
+          "title": "SellerPayout",
+          "type": "object"
+        },
+        "ShippingApprovalStatusEnum": {
+          "description": "Shipping approval status",
+          "enum": [
+            "not_required",
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          "title": "ShippingApprovalStatusEnum",
+          "type": "string"
+        },
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        },
+        "Taxes": {
+          "description": "Tax breakdown for an order (Canadian taxes).",
+          "properties": {
+            "GST": {
+              "default": 0.0,
+              "description": "Goods and Services Tax (Federal)",
+              "minimum": 0,
+              "title": "Gst",
+              "type": "number"
+            },
+            "PST": {
+              "default": 0.0,
+              "description": "Provincial Sales Tax",
+              "minimum": 0,
+              "title": "Pst",
+              "type": "number"
+            },
+            "HST": {
+              "default": 0.0,
+              "description": "Harmonized Sales Tax",
+              "minimum": 0,
+              "title": "Hst",
+              "type": "number"
+            },
+            "QST": {
+              "default": 0.0,
+              "description": "Quebec Sales Tax",
+              "minimum": 0,
+              "title": "Qst",
+              "type": "number"
+            }
+          },
+          "title": "Taxes",
+          "type": "object"
+        }
+      },
+      "description": "Complete order model. All money in integer cents.",
+      "example": {
+        "createdAt": "2026-02-01T10:00:00Z",
+        "customerEmail": "buyer@example.com",
+        "customerId": "cus_stripe123",
+        "items": [],
+        "orderId": "order_123abc",
+        "orderStatus": "pending",
+        "paymentStatus": "awaiting_payment",
+        "shippingAddress": {},
+        "shippingCostCents": 500,
+        "subtotalCents": 4999,
+        "taxAmountCents": 650,
+        "taxes": {
+          "GST": 2.5,
+          "PST": 3.5
+        },
+        "totalAmountCents": 6149,
+        "userId": "user_123"
+      },
+      "properties": {
+        "orderId": {
+          "minLength": 1,
+          "title": "Orderid",
+          "type": "string"
+        },
+        "userId": {
+          "minLength": 1,
+          "title": "Userid",
+          "type": "string"
+        },
+        "customerId": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Customerid"
+        },
+        "customerEmail": {
+          "anyOf": [
+            {
+              "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Customeremail"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrderItem"
+          },
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "sellerIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sellerids",
+          "type": "array"
+        },
+        "subtotalCents": {
+          "minimum": 0,
+          "title": "Subtotalcents",
+          "type": "integer"
+        },
+        "shippingCostCents": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Shippingcostcents",
+          "type": "integer"
+        },
+        "taxAmountCents": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Taxamountcents",
+          "type": "integer"
+        },
+        "totalAmountCents": {
+          "minimum": 0,
+          "title": "Totalamountcents",
+          "type": "integer"
+        },
+        "taxes": {
+          "$ref": "#/$defs/Taxes"
+        },
+        "orderStatus": {
+          "$ref": "#/$defs/OrderStatusEnum",
+          "default": "pending"
+        },
+        "paymentStatus": {
+          "$ref": "#/$defs/PaymentStatusEnum",
+          "default": "awaiting_payment"
+        },
+        "shippingAddress": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "updatedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updatedat"
+        },
+        "stripeSessionId": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripesessionid"
+        },
+        "stripePaymentIntentId": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stripepaymentintentid"
+        },
+        "currency": {
+          "default": "cad",
+          "title": "Currency",
+          "type": "string"
+        },
+        "shippingApprovalStatus": {
+          "$ref": "#/$defs/ShippingApprovalStatusEnum",
+          "default": "not_required"
+        },
+        "shippingApprovalRequired": {
+          "default": false,
+          "title": "Shippingapprovalrequired",
+          "type": "boolean"
+        },
+        "actualShipping": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Actualshipping",
+          "type": "number"
+        },
+        "pendingTotal": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Pendingtotal",
+          "type": "number"
+        },
+        "sellerPayouts": {
+          "items": {
+            "$ref": "#/$defs/SellerPayout"
+          },
+          "title": "Sellerpayouts",
+          "type": "array"
+        },
+        "confirmedByClient": {
+          "default": false,
+          "title": "Confirmedbyclient",
+          "type": "boolean"
+        },
+        "confirmedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmedat"
+        },
+        "platformFeeTotal": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Platformfeetotal",
+          "type": "number"
+        },
+        "payoutStatus": {
+          "default": "pending",
+          "description": "Overall payout status: pending, processing, completed, partial",
+          "title": "Payoutstatus",
+          "type": "string"
+        },
+        "ratings": {
+          "items": {
+            "$ref": "#/$defs/Ratings"
+          },
+          "title": "Ratings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "orderId",
+        "userId",
+        "items",
+        "subtotalCents",
+        "totalAmountCents"
+      ],
+      "title": "Order",
+      "type": "object"
+    },
+    "OrderCreate": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "DeliveryStatusEnum": {
+          "description": "Delivery status for individual items",
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered"
+          ],
+          "title": "DeliveryStatusEnum",
+          "type": "string"
+        },
+        "OrderItem": {
+          "description": "Individual item in an order \u2014 immutable snapshot at time of purchase.",
+          "example": {
+            "deliveryStatus": "pending",
+            "description": "Fresh organic apples",
+            "imageUrls": [
+              "https://example.com/image.jpg"
+            ],
+            "name": "Organic Apples",
+            "price": 4.99,
+            "productId": "prod_123",
+            "quantity": 2,
+            "sellerAddress": {
+              "city": "Toronto",
+              "country": "Canada",
+              "postalCode": "M5V 3A8",
+              "state": "ON",
+              "street": "123 Farm Road"
+            },
+            "sellerId": "seller_123"
+          },
+          "properties": {
+            "productId": {
+              "minLength": 1,
+              "title": "Productid",
+              "type": "string"
+            },
+            "name": {
+              "maxLength": 120,
+              "minLength": 1,
+              "title": "Name",
+              "type": "string"
+            },
+            "description": {
+              "maxLength": 4000,
+              "title": "Description",
+              "type": "string"
+            },
+            "price": {
+              "exclusiveMinimum": 0,
+              "title": "Price",
+              "type": "number"
+            },
+            "quantity": {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "title": "Quantity",
+              "type": "integer"
+            },
+            "imageUrls": {
+              "description": "Product image URLs",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Imageurls",
+              "type": "array"
+            },
+            "sellerId": {
+              "minLength": 1,
+              "title": "Sellerid",
+              "type": "string"
+            },
+            "sellerAddress": {
+              "$ref": "#/$defs/Address"
+            },
+            "deliveryStatus": {
+              "$ref": "#/$defs/DeliveryStatusEnum",
+              "default": "pending"
+            },
+            "trackingNumber": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Trackingnumber"
+            },
+            "confirmedByBuyer": {
+              "default": false,
+              "title": "Confirmedbybuyer",
+              "type": "boolean"
+            },
+            "weightKg": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Weightkg"
+            },
+            "lengthCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Lengthcm"
+            },
+            "widthCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Widthcm"
+            },
+            "heightCm": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Heightcm"
+            },
+            "isLocalDeliveryOnly": {
+              "default": false,
+              "title": "Islocaldeliveryonly",
+              "type": "boolean"
+            },
+            "isPerishable": {
+              "default": false,
+              "title": "Isperishable",
+              "type": "boolean"
+            },
+            "estimatedShipDays": {
+              "default": 3,
+              "minimum": 0,
+              "title": "Estimatedshipdays",
+              "type": "integer"
+            },
+            "deliveryOptions": {
+              "items": {
+                "$ref": "#/$defs/SellerDeliveryOption"
+              },
+              "title": "Deliveryoptions",
+              "type": "array"
+            },
+            "minimumOrderQuantity": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Minimumorderquantity",
+              "type": "integer"
+            },
+            "freeShipping": {
+              "default": false,
+              "title": "Freeshipping",
+              "type": "boolean"
+            },
+            "isDigital": {
+              "default": false,
+              "description": "Whether this item is a digital product",
+              "title": "Isdigital",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "productId",
+            "name",
+            "description",
+            "price",
+            "quantity",
+            "imageUrls",
+            "sellerId",
+            "sellerAddress"
+          ],
+          "title": "OrderItem",
+          "type": "object"
+        },
+        "SellerDeliveryOption": {
+          "description": "Seller-specific delivery options with quantity-based pricing",
+          "example": {
+            "availableNationwide": true,
+            "description": "Standard shipping",
+            "estimatedDays": 5,
+            "maxItemsPerShipment": 10,
+            "quantityDiscounts": [],
+            "type": "standard",
+            "costCents": 599,
+            "additionalItemCostCents": 150
+          },
+          "properties": {
+            "type": {
+              "description": "Delivery type: pickup, standard, express, same_day",
+              "title": "Type",
+              "type": "string"
+            },
+            "description": {
+              "description": "Description of delivery option",
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Description",
+              "type": "string"
+            },
+            "estimatedDays": {
+              "description": "Estimated delivery days",
+              "maximum": 90,
+              "minimum": 0,
+              "title": "Estimateddays",
+              "type": "integer"
+            },
+            "quantityDiscounts": {
+              "description": "Quantity-based shipping discounts",
+              "items": {
+                "$ref": "#/$defs/ShippingQuantityDiscount"
+              },
+              "title": "Quantitydiscounts",
+              "type": "array"
+            },
+            "maxItemsPerShipment": {
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)",
+              "minimum": 0,
+              "title": "Maxitemspershipment",
+              "type": "integer"
+            },
+            "availableNationwide": {
+              "default": true,
+              "description": "Whether option is available for international suppliers",
+              "title": "Availableinternational",
+              "type": "boolean"
+            },
+            "costCents": {
+              "description": "Base cost in cents (CAD)",
+              "minimum": 0,
+              "title": "Cost",
+              "type": "integer"
+            },
+            "additionalItemCostCents": {
+              "default": 0.0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment",
+              "minimum": 0,
+              "title": "Additionalitemcost",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type",
+            "description",
+            "costCents",
+            "estimatedDays"
+          ],
+          "title": "SellerDeliveryOption",
+          "type": "object"
+        },
+        "ShippingQuantityDiscount": {
+          "description": "Volume-based shipping discount thresholds",
+          "example": {
+            "discountType": "percent",
+            "discountValue": 10.0,
+            "label": "10% off shipping for 5+ items",
+            "minQuantity": 5
+          },
+          "properties": {
+            "minQuantity": {
+              "description": "Minimum quantity to qualify for this discount",
+              "minimum": 2,
+              "title": "Minquantity",
+              "type": "integer"
+            },
+            "discountType": {
+              "default": "percent",
+              "description": "Discount type: percent, fixed, flat_rate",
+              "title": "Discounttype",
+              "type": "string"
+            },
+            "discountValue": {
+              "description": "Discount value (interpretation depends on discountType)",
+              "minimum": 0,
+              "title": "Discountvalue",
+              "type": "number"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional label for display",
+              "title": "Label"
+            }
+          },
+          "required": [
+            "minQuantity",
+            "discountValue"
+          ],
+          "title": "ShippingQuantityDiscount",
+          "type": "object"
+        }
+      },
+      "description": "Model for creating new orders (excludes orderId and createdAt which are generated).",
+      "properties": {
+        "userId": {
+          "minLength": 1,
+          "title": "Userid",
+          "type": "string"
+        },
+        "customerId": {
+          "minLength": 1,
+          "title": "Customerid",
+          "type": "string"
+        },
+        "customerEmail": {
+          "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+          "title": "Customeremail",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/OrderItem"
+          },
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "shippingAddress": {
+          "$ref": "#/$defs/Address"
+        },
+        "shippingCost": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Shippingcost",
+          "type": "number"
+        },
+        "currency": {
+          "default": "cad",
+          "title": "Currency",
+          "type": "string"
+        },
+        "shippingApprovalRequired": {
+          "default": false,
+          "title": "Shippingapprovalrequired",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "userId",
+        "customerId",
+        "customerEmail",
+        "items",
+        "shippingAddress"
+      ],
+      "title": "OrderCreate",
+      "type": "object"
+    },
+    "User": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "UserRole": {
+          "description": "User roles",
+          "enum": [
+            "admin",
+            "seller",
+            "buyer"
+          ],
+          "title": "UserRole",
+          "type": "string"
+        }
+      },
+      "description": "Complete user model\nIncludes buyer, seller, and admin information",
+      "example": {
+        "createdAt": "2026-02-01T10:00:00Z",
+        "email": "user@example.com",
+        "name": "John Doe",
+        "roles": [
+          "buyer"
+        ],
+        "uid": "user_123abc"
+      },
+      "properties": {
+        "uid": {
+          "description": "Firebase Auth User ID",
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Uid",
+          "type": "string"
+        },
+        "email": {
+          "description": "User email address",
+          "format": "email",
+          "title": "Email",
+          "type": "string"
+        },
+        "name": {
+          "description": "User display name",
+          "maxLength": 60,
+          "minLength": 2,
+          "title": "Name",
+          "type": "string"
+        },
+        "roles": {
+          "description": "User roles (buyer, seller, admin)",
+          "items": {
+            "$ref": "#/$defs/UserRole"
+          },
+          "minItems": 1,
+          "title": "Roles",
+          "type": "array"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "User's default address"
+        },
+        "createdAt": {
+          "description": "Account creation timestamp",
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "customerId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Stripe Customer ID for payments",
+          "title": "Customerid"
+        },
+        "lastCheckoutSession": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last Stripe Checkout Session ID",
+          "title": "Lastcheckoutsession"
+        },
+        "lastOrderId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last created order ID",
+          "title": "Lastorderid"
+        },
+        "lastCheckoutTimestamp": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Timestamp of last checkout",
+          "title": "Lastcheckouttimestamp"
+        },
+        "stripeAccountId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Stripe Connect account ID (for sellers)",
+          "title": "Stripeaccountid"
+        },
+        "payoutsEnabled": {
+          "default": false,
+          "description": "Whether seller can receive payouts",
+          "title": "Payoutsenabled",
+          "type": "boolean"
+        },
+        "chargesEnabled": {
+          "default": false,
+          "description": "Whether seller can accept charges",
+          "title": "Chargesenabled",
+          "type": "boolean"
+        },
+        "onboardingCompleted": {
+          "default": false,
+          "description": "Whether Stripe Connect onboarding is complete",
+          "title": "Onboardingcompleted",
+          "type": "boolean"
+        },
+        "suspended": {
+          "default": false,
+          "description": "Whether account is suspended",
+          "title": "Suspended",
+          "type": "boolean"
+        },
+        "suspendedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When account was suspended",
+          "title": "Suspendedat"
+        },
+        "paymentProvider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "stripe",
+          "description": "Payment provider for seller payouts (stripe or airwallex)",
+          "title": "Paymentprovider"
+        },
+        "airwallexAccountId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Airwallex connected account ID",
+          "title": "Airwallexaccountid"
+        },
+        "airwallexCustomerId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Airwallex customer ID",
+          "title": "Airwallexcustomerid"
+        },
+        "airwallexStatus": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Airwallex account status",
+          "title": "Airwallexstatus"
+        },
+        "adminMfaEnabled": {
+          "default": false,
+          "description": "Whether admin MFA is enabled",
+          "title": "Adminmfaenabled",
+          "type": "boolean"
+        },
+        "adminMfaSecret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Admin TOTP secret (server-only)",
+          "title": "Adminmfasecret"
+        },
+        "adminMfaVerifiedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last successful admin MFA verification",
+          "title": "Adminmfaverifiedat"
+        },
+        "adminMfaBackupCodes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One-time admin MFA backup codes",
+          "title": "Adminmfabackupcodes"
+        },
+        "updatedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last update timestamp",
+          "title": "Updatedat"
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "name",
+        "roles"
+      ],
+      "title": "User",
+      "type": "object"
+    },
+    "UserCreate": {
+      "$defs": {
+        "Address": {
+          "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+          "example": {
+            "apartment": "Apt 4B",
+            "city": "Toronto",
+            "country": "Canada",
+            "isDefault": true,
+            "label": "Home",
+            "phoneNumber": "4165551234",
+            "postalCode": "M5V 3A8",
+            "state": "ON",
+            "street": "123 Main Street"
+          },
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Street",
+              "type": "string"
+            },
+            "apartment": {
+              "default": "",
+              "description": "Unit, Suite, Apt number",
+              "maxLength": 20,
+              "title": "Apartment",
+              "type": "string"
+            },
+            "city": {
+              "description": "City name",
+              "maxLength": 50,
+              "minLength": 2,
+              "title": "City",
+              "type": "string"
+            },
+            "state": {
+              "description": "Province/State code (e.g., ON, QC, BC)",
+              "maxLength": 2,
+              "minLength": 2,
+              "title": "State",
+              "type": "string"
+            },
+            "postalCode": {
+              "description": "Canadian postal code (e.g., M5V 3A8)",
+              "title": "Postalcode",
+              "type": "string"
+            },
+            "country": {
+              "default": "Canada",
+              "description": "Country name",
+              "title": "Country",
+              "type": "string"
+            },
+            "phoneNumber": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Contact phone number for delivery",
+              "title": "Phonenumber"
+            },
+            "isDefault": {
+              "default": false,
+              "description": "Whether this is the default address",
+              "title": "Isdefault",
+              "type": "boolean"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Address label (Home, Work, Other)",
+              "title": "Label"
+            },
+            "latitude": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Latitude for mapping/delivery routing",
+              "title": "Latitude"
+            },
+            "longitude": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Longitude for mapping/delivery routing",
+              "title": "Longitude"
+            }
+          },
+          "required": [
+            "street",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "title": "Address",
+          "type": "object"
+        },
+        "UserRole": {
+          "description": "User roles",
+          "enum": [
+            "admin",
+            "seller",
+            "buyer"
+          ],
+          "title": "UserRole",
+          "type": "string"
+        }
+      },
+      "description": "Model for creating new users\n(excludes uid and createdAt which are generated by Firebase Auth)",
+      "properties": {
+        "email": {
+          "format": "email",
+          "title": "Email",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 2,
+          "title": "Name",
+          "type": "string"
+        },
+        "roles": {
+          "default": [
+            "buyer"
+          ],
+          "items": {
+            "$ref": "#/$defs/UserRole"
+          },
+          "title": "Roles",
+          "type": "array"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "email",
+        "name"
+      ],
+      "title": "UserCreate",
+      "type": "object"
+    }
+  }
+}

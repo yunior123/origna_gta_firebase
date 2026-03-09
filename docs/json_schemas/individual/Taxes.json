@@ -1,0 +1,35 @@
+{
+  "description": "Tax breakdown for an order (Canadian taxes).",
+  "properties": {
+    "GST": {
+      "default": 0.0,
+      "description": "Goods and Services Tax (Federal)",
+      "minimum": 0,
+      "title": "Gst",
+      "type": "number"
+    },
+    "PST": {
+      "default": 0.0,
+      "description": "Provincial Sales Tax",
+      "minimum": 0,
+      "title": "Pst",
+      "type": "number"
+    },
+    "HST": {
+      "default": 0.0,
+      "description": "Harmonized Sales Tax",
+      "minimum": 0,
+      "title": "Hst",
+      "type": "number"
+    },
+    "QST": {
+      "default": 0.0,
+      "description": "Quebec Sales Tax",
+      "minimum": 0,
+      "title": "Qst",
+      "type": "number"
+    }
+  },
+  "title": "Taxes",
+  "type": "object"
+}

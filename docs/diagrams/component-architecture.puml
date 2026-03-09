@@ -1,0 +1,139 @@
+@startuml OrignaGTA Component Architecture
+!define RECTANGLE class
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam component {
+    BackgroundColor<<frontend>> LightSkyBlue
+    BackgroundColor<<backend>> LightGreen
+    BackgroundColor<<database>> LightYellow
+    BackgroundColor<<external>> LightCoral
+    BackgroundColor<<service>> Lavender
+}
+
+' Frontend Layer
+package "Frontend Layer" {
+    component "Flutter Web App" <<frontend>> as FlutterApp {
+        component "MVVM Architecture" as MVVM
+        component "15 ViewModels" as ViewModels
+        component "7 Repositories" as Repos
+        component "Riverpod State" as Riverpod
+    }
+}
+
+' Backend Layer
+package "Backend Layer (Cloud Functions Gen2)" {
+    component "Python Functions" <<backend>> as Functions {
+        component "Payment APIs\n(7 Stripe + 5 Airwallex)" as PaymentFuncs
+        component "Product APIs\n(6 functions)" as ProductFuncs
+        component "Order APIs\n(6 functions)" as OrderFuncs
+        component "Admin APIs\n(5 functions)" as AdminFuncs
+        component "Cron Jobs\n(6 scheduled)" as CronJobs
+    }
+}
+
+' Database Layer
+package "Data Layer" {
+    database "Firestore" <<database>> as Firestore {
+        component "users" as UsersCol
+        component "products" as ProductsCol
+        component "orders" as OrdersCol
+        component "payouts" as PayoutsCol
+        component "categories" as CategoriesCol
+        component "webhook_events" as WebhooksCol
+        component "rate_limits" as RateLimitsCol
+        component "security_alerts" as AlertsCol
+    }
+}
+
+' Services Layer
+package "Services & Integrations" {
+    component "Firebase Auth" <<service>> as Auth
+    component "Firebase Storage" <<service>> as Storage
+    component "Algolia Search" <<external>> as Algolia
+    component "Stripe\n(Connect + Checkout)" <<external>> as Stripe
+    component "Airwallex\n(3DS Payments)" <<external>> as Airwallex
+    component "Mailjet\n(Emails)" <<external>> as Mailjet
+    component "Cloudflare R2\n(Image CDN)" <<external>> as R2
+    component "Geoapify\n(Geocoding)" <<external>> as Geoapify
+    component "Sentry\n(Monitoring)" <<external>> as Sentry
+}
+
+' Infrastructure
+package "Infrastructure" {
+    cloud "Firebase Hosting" as Hosting
+    cloud "Google Cloud\n(Secret Manager)" as GCP
+}
+
+' Frontend Relationships
+FlutterApp --> Auth : "Authentication\n(StreamProvider)"
+FlutterApp --> Functions : "HTTPS Callable\n(35+ endpoints)"
+FlutterApp --> Firestore : "Direct Queries\n(Security Rules)"
+FlutterApp --> Algolia : "Product Search\n(typo-tolerant)"
+FlutterApp --> Sentry : "Error Tracking"
+
+MVVM --> ViewModels
+ViewModels --> Repos
+Repos --> Riverpod
+
+' Backend Relationships
+Functions --> Firestore : "CRUD Operations\n(Admin SDK)"
+Functions --> Auth : "User Management"
+Functions --> Stripe : "Payments & Payouts"
+Functions --> Airwallex : "Alternative Payments"
+Functions --> Mailjet : "Email Notifications"
+Functions --> R2 : "Image Upload\n(Presigned URLs)"
+Functions --> Geoapify : "Address Validation"
+Functions --> GCP : "Secret Retrieval"
+
+PaymentFuncs --> Stripe
+PaymentFuncs --> Airwallex
+ProductFuncs --> Algolia : "Auto-indexing"
+ProductFuncs --> R2
+OrderFuncs --> Mailjet
+CronJobs --> Firestore
+
+' Database Triggers
+Firestore --> Functions : "onCreate/onUpdate\n(Product Indexing)"
+Firestore ..> Algolia : "Sync via Functions"
+
+' External Webhooks
+Stripe --> Functions : "Webhooks\n(payment events)"
+Airwallex --> Functions : "Webhooks\n(payment events)"
+
+' Deployment
+Hosting --> FlutterApp : "Hosts"
+GCP --> Functions : "Runtime Env"
+
+note right of FlutterApp
+  **Tech Stack**
+  - Flutter 3.10.7
+  - Riverpod 2.6.1
+  - Freezed models
+  - 26 screens
+end note
+
+note right of Functions
+  **Python 3.11**
+  - 5396 lines (main.py)
+  - Pydantic validation
+  - Rate limiting
+  - Idempotent webhooks
+end note
+
+note bottom of Firestore
+  **NoSQL Database**
+  - 8 collections
+  - Composite indexes
+  - Security rules (Canada-only buyer/shipping addresses)
+  - Transactions for stock
+end note
+
+note bottom of Algolia
+  **Search Performance**
+  - 50ms avg latency
+  - Typo tolerance
+  - Firestore fallback
+end note
+
+@enduml

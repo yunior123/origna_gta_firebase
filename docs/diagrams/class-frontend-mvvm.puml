@@ -1,0 +1,393 @@
+@startuml Frontend MVVM Architecture - Flutter
+!define ABSTRACT abstract class
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor<<ViewModel>> LightSkyBlue
+    BackgroundColor<<Repository>> LightGreen
+    BackgroundColor<<Model>> LightYellow
+    BackgroundColor<<Service>> Lavender
+    BackgroundColor<<Provider>> LightCoral
+}
+
+' ======== Models Layer ========
+package "Models (Freezed Immutables)" {
+    class Product <<Model>> {
+        +String id
+        +String name
+        +double price
+        +String description
+        +List<String> imageUrls
+        +String sellerId
+        +Address sellerAddress
+        +int categoryId
+        +int stockQuantity
+        +double rating
+        +int ratingCount
+        +List<String> keywords
+        +bool isActive
+        +bool isDigital
+        +Supplier? supplier
+        +DateTime dateCreated
+        --
+        +Product copyWith(...)
+        +Map<String, dynamic> toJson()
+        +Product.fromJson(json)
+    }
+    
+    class Order <<Model>> {
+        +String id
+        +String userId
+        +List<OrderItem> items
+        +int totalAmount
+        +int subtotal
+        +int taxAmount
+        +int shippingCost
+        +OrderStatus orderStatus
+        +PaymentStatus paymentStatus
+        +DeliveryStatus deliveryStatus
+        +Address shippingAddress
+        +String? stripeSessionId
+        +String? stripePaymentIntentId
+        +DateTime dateCreated
+        --
+        +Order copyWith(...)
+        +Map<String, dynamic> toJson()
+    }
+    
+    class User <<Model>> {
+        +String uid
+        +String email
+        +String name
+        +List<UserRole> roles
+        +Address? address
+        +String? stripeAccountId
+        +bool onboardingCompleted
+        +bool chargesEnabled
+        +bool payoutsEnabled
+        +bool suspended
+        --
+        +User copyWith(...)
+        +bool isSeller()
+        +bool isAdmin()
+    }
+    
+    class Address <<Model>> {
+        +String street
+        +String city
+        +String province
+        +String postalCode
+        +String country
+        +double? latitude
+        +double? longitude
+        --
+        +Address copyWith(...)
+        +String toFormattedString()
+    }
+    
+    enum OrderStatus {
+        pending
+        confirmed
+        processing
+        shipped
+        delivered
+        cancelled
+        expired
+        refunded
+    }
+    
+    enum PaymentStatus {
+        pending
+        authorized
+        captured
+        failed
+        refunded
+    }
+}
+
+' ======== Repository Layer ========
+package "Repositories (Data Access)" {
+    ABSTRACT class ProductRepository <<Repository>> {
+        {abstract} +Future<ProductResult> fetchProducts(...)
+        {abstract} +Future<Product> getProductById(String id)
+        {abstract} +Future<void> createProduct(Product)
+        {abstract} +Future<void> updateProduct(Product)
+        {abstract} +Future<void> deleteProduct(String id)
+    }
+    
+    class AlgoliaProductRepository <<Repository>> {
+        -Ref _ref
+        -AlgoliaService _algoliaService
+        -ProductRepository _firestoreFallback
+        --
+        +Future<ProductResult> fetchProducts(\n  String? query,\n  int? categoryId\n)
+        -Future<List<Product>> _searchAlgolia(...)
+        -Future<List<Product>> _fallbackToFirestore(...)
+    }
+    
+    class FirebaseProductRepository <<Repository>> {
+        -FirebaseFirestore _db
+        --
+        +Future<ProductResult> fetchProducts(...)
+        +Future<Product> getProductById(String id)
+        +Future<void> createProduct(Product)
+        +Stream<List<Product>> getSellerProducts(String sellerId)
+    }
+    
+    ABSTRACT class OrderRepository <<Repository>> {
+        {abstract} +Future<List<Order>> fetchUserOrders(String userId)
+        {abstract} +Future<List<Order>> fetchSellerOrders(String sellerId)
+        {abstract} +Future<Order> getOrderById(String id)
+        {abstract} +Future<void> updateOrderStatus(...)
+    }
+    
+    class FirebaseOrderRepository <<Repository>> {
+        -FirebaseFirestore _db
+        -HttpsCallable _createCheckoutCallable
+        -HttpsCallable _confirmReceiptCallable
+        --
+        +Future<CheckoutResult> createCheckoutSession(...)
+        +Future<void> confirmReceipt(String orderId)
+        +Future<List<Order>> fetchUserOrders(String userId)
+        +Future<List<Order>> fetchSellerOrders(String sellerId)
+    }
+    
+    ABSTRACT class AuthRepository <<Repository>> {
+        {abstract} +Stream<User?> authStateChanges()
+        {abstract} +Future<User?> signInWithEmailAndPassword(...)
+        {abstract} +Future<User?> signUpWithEmailAndPassword(...)
+        {abstract} +Future<void> signOut()
+    }
+    
+    class FirebaseAuthRepository <<Repository>> {
+        -FirebaseAuth _auth
+        -FirebaseFirestore _db
+        --
+        +Stream<User?> authStateChanges()
+        +Future<User?> signInWithEmailAndPassword(...)
+        +Future<void> sendEmailVerification()
+    }
+    
+    class CartRepository <<Repository>> {
+        -FirebaseFirestore _db
+        --
+        +Stream<List<CartItem>> watchCart(String userId)
+        +Future<void> addToCart(String userId, CartItem)
+        +Future<void> removeFromCart(...)
+        +Future<void> updateQuantity(...)
+        +Future<void> clearCart(String userId)
+    }
+}
+
+' ======== ViewModel Layer ========
+package "ViewModels (Business Logic)" {
+    class HomeViewModel <<ViewModel>> {
+        -Ref _ref
+        -HomeState state
+        --
+        +Future<void> loadProducts()
+        +void onSearchChanged(String query)
+        +void onCategoryChanged(int? categoryId)
+        +Future<void> refreshProducts()
+        -void _updateState(HomeState newState)
+    }
+    
+    class HomeState <<State>> {
+        +List<Product> products
+        +bool isLoading
+        +String? errorMessage
+        +String searchQuery
+        +int? selectedCategoryId
+        --
+        +HomeState copyWith(...)
+    }
+    
+    class LoginViewModel <<ViewModel>> {
+        -Ref _ref
+        -LoginState state
+        --
+        +Future<void> login(String email, String password)
+        +Future<void> signUp(...)
+        +void clearError()
+        -bool _validateEmail(String email)
+    }
+    
+    class LoginState <<State>> {
+        +bool isLoading
+        +String? errorMessage
+        +bool isAuthenticated
+        --
+        +LoginState copyWith(...)
+    }
+    
+    class CheckoutNotifier <<ViewModel>> {
+        -Ref _ref
+        -CheckoutState state
+        --
+        +Future<void> calculateShipping(Address address)
+        +Future<void> createCheckoutSession()
+        +void updateAddress(Address address)
+        -int _calculateTaxes(int subtotal, String province)
+    }
+    
+    class CheckoutState <<State>> {
+        +List<CartItem> items
+        +Address? shippingAddress
+        +int subtotal
+        +int taxAmount
+        +int shippingCost
+        +int totalAmount
+        +bool isLoading
+        +String? errorMessage
+        --
+        +CheckoutState copyWith(...)
+    }
+    
+    class ProductDetailViewModel <<ViewModel>> {
+        -Ref _ref
+        -String productId
+        --
+        +Future<void> loadProduct()
+        +Future<void> addToCart(int quantity)
+        +Future<void> toggleFavorite()
+        +Future<void> submitRating(int rating, String? review)
+    }
+    
+    class AddProductViewModel <<ViewModel>> {
+        -Ref _ref
+        --
+        +Future<void> createProduct(Product product)
+        +Future<List<String>> uploadImages(List<File> images)
+        -void _validateProduct(Product product)
+    }
+    
+    class BuyerOrdersViewModel <<ViewModel>> {
+        -Ref _ref
+        --
+        +Future<void> loadOrders()
+        +Future<void> confirmReceipt(String orderId)
+        +Future<void> cancelOrder(String orderId)
+        +Future<void> requestRefund(String orderId)
+    }
+    
+    class SellerOrdersViewModel <<ViewModel>> {
+        -Ref _ref
+        --
+        +Future<void> loadOrders()
+        +Future<void> updateOrderStatus(...)
+        +Future<void> addTrackingInfo(...)
+    }
+}
+
+' ======== Services Layer ========
+package "Services" {
+    class AlgoliaService <<Service>> {
+        -HitsSearcher _searcher
+        -String _applicationId
+        -String _apiKey
+        --
+        +Future<List<Product>> search(\n  String query,\n  int? categoryId\n)
+        +Future<void> indexProduct(Product)
+        +Future<void> deleteFromIndex(String productId)
+    }
+    
+    class AnalyticsService <<Service>> {
+        --
+        +void logEvent(String name, Map<String, dynamic>)
+        +void logScreenView(String screenName)
+        +void setUserId(String userId)
+    }
+}
+
+' ======== Riverpod Providers ========
+package "Providers (Dependency Injection)" {
+    class Providers <<Provider>> {
+        +authRepositoryProvider : Provider<AuthRepository>
+        +productRepositoryProvider : Provider<ProductRepository>
+        +orderRepositoryProvider : Provider<OrderRepository>
+        +cartRepositoryProvider : Provider<CartRepository>
+        +algoliaServiceProvider : Provider<AlgoliaService>
+        --
+        +homeViewModelProvider : StateNotifierProvider
+        +loginViewModelProvider : StateNotifierProvider
+        +checkoutProvider : StateNotifierProvider
+        +currentUserProvider : StreamProvider
+        +cartStreamProvider : StreamProvider
+    }
+}
+
+' ======== Relationships ========
+
+' Model relationships
+Product --> Address : sellerAddress
+Product --> OrderStatus : enum
+Order --> OrderItem : items *
+Order --> Address : shippingAddress
+Order --> OrderStatus : orderStatus
+Order --> PaymentStatus : paymentStatus
+User --> Address : address
+
+' Repository implementations
+ProductRepository <|-- AlgoliaProductRepository : implements
+ProductRepository <|-- FirebaseProductRepository : implements
+OrderRepository <|-- FirebaseOrderRepository : implements
+AuthRepository <|-- FirebaseAuthRepository : implements
+
+' Repository dependencies
+AlgoliaProductRepository --> AlgoliaService : uses
+AlgoliaProductRepository --> FirebaseProductRepository : fallback
+FirebaseProductRepository --> Product : returns
+FirebaseOrderRepository --> Order : returns
+FirebaseAuthRepository --> User : returns
+CartRepository --> Product : fetches
+
+' ViewModel dependencies
+HomeViewModel --> ProductRepository : uses
+HomeViewModel --> HomeState : manages
+LoginViewModel --> AuthRepository : uses
+LoginViewModel --> LoginState : manages
+CheckoutNotifier --> OrderRepository : uses
+CheckoutNotifier --> CartRepository : uses
+CheckoutNotifier --> CheckoutState : manages
+ProductDetailViewModel --> ProductRepository : uses
+ProductDetailViewModel --> CartRepository : uses
+AddProductViewModel --> ProductRepository : uses
+BuyerOrdersViewModel --> OrderRepository : uses
+SellerOrdersViewModel --> OrderRepository : uses
+
+' Provider relationships
+Providers --> HomeViewModel : provides
+Providers --> LoginViewModel : provides
+Providers --> CheckoutNotifier : provides
+Providers --> ProductRepository : provides
+Providers --> OrderRepository : provides
+Providers --> AuthRepository : provides
+Providers --> AlgoliaService : provides
+
+note top of Providers
+  **Riverpod Dependency Injection**
+  - Centralized provider definitions
+  - Scoped lifetime management
+  - Auto-dispose when not watched
+  - Ref.read() for one-time access
+  - Ref.watch() for reactive updates
+end note
+
+note bottom of AlgoliaProductRepository
+  **Resilience Pattern**
+  Try Algolia (50ms avg)
+  ↓ On failure
+  Fallback to Firestore (200ms avg)
+  
+  Ensures 100% availability
+end note
+
+note right of HomeState
+  **Immutable State**
+  - Freezed generated
+  - copyWith() for updates
+  - JSON serializable
+  - Equality by value
+end note
+
+@enduml

@@ -1,0 +1,162 @@
+@startuml Checkout Flow - E2E Payment Processing
+!pragma teoz true
+
+actor "User" as User
+participant "Flutter App\n(CheckoutViewModel)" as Flutter
+participant "OrderRepository" as Repo
+participant "Cloud Function\ncreate_checkout_session" as CF
+participant "Firestore" as DB
+participant "Stripe API" as Stripe
+participant "Mailjet" as Email
+participant "Cloud Function\nstripe_webhook" as Webhook
+participant "Cloud Function\nconfirm_order_receipt" as Confirm
+
+autonumber
+
+== Phase 1: Checkout Initiation ==
+
+User -> Flutter: Click "Checkout"
+activate Flutter
+
+Flutter -> Flutter: Validate cart items\n(non-empty, stock)
+
+Flutter -> Repo: calculateShipping(items, address)
+activate Repo
+
+Repo -> CF: [HTTPS Callable]\ncreate_checkout_session({\n  items, address, userId\n})
+activate CF
+
+CF -> CF: Rate limit check\n(5 req/min/user)
+
+CF -> DB: Start transaction
+activate DB
+
+CF -> DB: Validate stock for each item\n(atomic check)
+DB --> CF: Stock available
+
+CF -> DB: Reserve stock\n(decrement stockQuantity)
+DB --> CF: Stock reserved
+
+CF -> DB: Create order document\n(status: pending)
+DB --> CF: orderId
+
+deactivate DB
+
+CF -> Stripe: Create Checkout Session\n{\n  mode: payment,\n  capture_method: manual,\n  line_items: [...],\n  metadata: {orderId}\n}
+activate Stripe
+
+Stripe --> CF: {\n  sessionId,\n  url: stripe_checkout_url\n}
+deactivate Stripe
+
+CF --> Repo: {\n  sessionId,\n  orderId,\n  checkoutUrl\n}
+deactivate CF
+
+Repo --> Flutter: CheckoutResult
+deactivate Repo
+
+Flutter -> User: Redirect to Stripe Checkout
+deactivate Flutter
+
+== Phase 2: Payment Authorization ==
+
+User -> Stripe: Enter card details\n+ Complete payment
+activate Stripe
+
+Stripe -> Stripe: Authorize payment\n(hold funds, no capture)
+
+Stripe -> Webhook: [POST] checkout.session.completed\n{\n  event_id,\n  session_id,\n  payment_intent_id\n}
+activate Webhook
+
+Webhook -> DB: Check webhook_events/event_id
+activate DB
+DB --> Webhook: Not exists (idempotent check)
+
+Webhook -> DB: Create webhook_events/event_id\n(prevent reprocessing)
+DB --> Webhook: Created
+deactivate DB
+
+Webhook -> DB: Update order\n{\n  status: confirmed,\n  paymentStatus: authorized,\n  stripePaymentIntentId,\n  stripeSessionId\n}
+activate DB
+DB --> Webhook: Updated
+deactivate DB
+
+Webhook -> Email: Send order confirmation\n{\n  to: buyer,\n  orderDetails,\n  trackingInfo\n}
+activate Email
+Email --> Webhook: Email sent
+deactivate Email
+
+Webhook -> Email: Send seller notification\n(new order received)
+Email --> Webhook: Email sent
+deactivate Email
+
+Webhook --> Stripe: 200 OK
+deactivate Webhook
+
+Stripe --> User: Payment successful\n(funds authorized)
+deactivate Stripe
+
+User -> Flutter: View order details\n(status: confirmed)
+
+note over User, DB
+  **Authorization Window: 7 days**
+  Funds are held but not captured.
+  Seller must ship within 7 days.
+  Auto-expiration if not captured.
+end note
+
+== Phase 3: Order Fulfillment ==
+
+User -> Flutter: Mark as received\n(after delivery)
+activate Flutter
+
+Flutter -> Confirm: [HTTPS Callable]\nconfirm_order_receipt(orderId)
+activate Confirm
+
+Confirm -> DB: Get order details
+activate DB
+DB --> Confirm: Order data\n(paymentIntentId, items, sellers)
+deactivate DB
+
+Confirm -> Stripe: Capture Payment Intent\n(release funds)
+activate Stripe
+Stripe --> Confirm: Payment captured
+deactivate Stripe
+
+Confirm -> DB: Update order\n{\n  status: delivered,\n  paymentStatus: captured,\n  deliveryStatus: delivered\n}
+activate DB
+DB --> Confirm: Updated
+deactivate DB
+
+loop For each seller in order
+    Confirm -> DB: Create payout record\n{\n  sellerId,\n  amount: sellerTotal - 2.5%,\n  platformFee: 2.5%,\n  status: pending\n}
+    activate DB
+    DB --> Confirm: Payout created
+    deactivate DB
+    
+    Confirm -> Stripe: Create Transfer\n{\n  destination: seller_account,\n  amount: sellerTotal * 0.975\n}
+    activate Stripe
+    Stripe --> Confirm: Transfer initiated
+    deactivate Stripe
+    
+    Confirm -> DB: Update payout\n(status: completed)
+    activate DB
+    DB --> Confirm: Updated
+    deactivate DB
+end
+
+Confirm --> Flutter: Success
+deactivate Confirm
+
+Flutter -> User: Order completed!\n(payout to sellers)
+deactivate Flutter
+
+== Phase 4: Auto-Capture (Alternative Path) ==
+
+note over CF, Stripe
+  **Cron Job: auto_capture_confirmed_receipts**
+  Runs daily at 01:00 UTC
+  Captures payments 7 days after delivery
+  (if buyer didn't confirm manually)
+end note
+
+@enduml

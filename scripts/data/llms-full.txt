@@ -1,0 +1,78 @@
+# OrignaGta - Detailed Codebase Map (Full)
+
+## Frontend (Flutter/Dart)
+Location: `/origna_gta`
+
+### Core Modules
+- `lib/core/schema/schema_constants.dart`: Global constants and enums.
+- `lib/core/theme/`: App styling and theme configurations.
+- `lib/features/`: Feature-based vertical slices (Auth, Checkout, Orders, Products, Search).
+- `lib/models/generated/`: Pydantic-equivalent Dart models.
+- `lib/providers/`: Global Riverpod providers.
+- `lib/services/`: External integrations (Firebase, Stripe, Algolia).
+
+### Conventions
+- PascalCase for Widgets and Classes.
+- camelCase for variables and methods.
+- ViewModels handle all business logic.
+
+## Backend (Python Cloud Functions)
+Location: `/functions`
+
+### Core Modules
+- `functions/main.py`: Entry point for all Cloud Functions.
+- `functions/schema_constants.py`: Python-side global constants.
+- `functions/models/`: Pydantic models for request/response validation.
+- `functions/handlers/`: Feature-specific logic (Orders, Payments, Products, Users).
+- `functions/services/`: Clients for external services (Stripe, Algolia, Mailjet).
+- `functions/utils/`: Shared helper functions.
+
+### Conventions
+- snake_case for functions and variables.
+- PascalCase for Classes (Pydantic models).
+- Strict typing with type hints.
+
+## Database Schema (Firestore)
+Location: `/docs/database_schema.json`
+
+### Collections
+- `users`: User profiles, settings, and addresses.
+- `products`: Product listings (draft, active, archived).
+- `orders`: Transactional records, status history, and shipping.
+- `product_questions`: Q&A for products.
+- `ratings`: User reviews and ratings.
+- `fcm_tokens`: Push notification tokens per user.
+
+## Infrastructure & DevOps
+- `firebase.json`: Firebase configuration (Hosting, Functions, Firestore rules).
+- `firestore.rules`: Security rules for Firestore.
+- `storage.rules`: Security rules for Cloud Storage/R2.
+- `.github/workflows/`: CI/CD pipelines for staging and production.
+
+## Verification & Testing
+- `e2e/`: Playwright scripts for cross-platform integration testing.
+- `functions/tests/`: Pytest suite for backend logic.
+- `origna_gta/test/`: Unit and widget tests for Flutter.
+
+## AI Agentic Ecosystem (.claude/)
+This codebase is "Agent-Native," meaning it contains explicit instructions for AI models to operate as senior engineers.
+
+### Specialized Sub-Agents (.claude/agents/)
+Agents are specialized personas with restricted scopes and deep expertise.
+- `firebase-architect-agent.md`: NoSQL modeling, scalability, and security rules.
+- `repomix-analyzer-agent.md`: Cross-stack drift and system-wide architectural audits.
+- `security-auditor.md`: Vulnerability scanning and adversarial logic prediction.
+- `performance-auditor.md`: N+1 query detection and widget rebuild optimization.
+- `logic-auditor.md`: Magnus Carlsen-style logic verification for complex flows.
+
+### Repeatable Skills (.claude/skills/)
+Skills provide procedural guidance for common project tasks.
+- `firebase-scalability/`: Best practices for 100M+ user Firestore architecture.
+- `repomix-codebase-snapshot/`: Workflow for holistic system analysis.
+- `adversarial-logic-architect/`: Framework for predicting and mitigating malicious behavior.
+- `canadian-law-compliance/`: Rules for PIPEDA, Law 25, and CASL.
+- `flutter-semantics-playwright/`: Guidance for testing Flutter Web accessibility.
+
+### Persistent Memory
+- `.claude/LEARNED.md`: Historical project knowledge and bug-fix patterns.
+- `STATE.md`: Real-time project status and upcoming task plan.

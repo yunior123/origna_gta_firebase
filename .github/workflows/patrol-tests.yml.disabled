@@ -1,0 +1,100 @@
+name: Patrol Integration Tests
+
+on:
+  workflow_dispatch:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'origna_gta/lib/**'
+#       - 'origna_gta/patrol_test/**'
+#       - 'functions/handlers/**'
+
+concurrency:
+  group: patrol-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  patrol-ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: origna_gta
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Patrol CLI
+        run: dart pub global activate patrol_cli
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Setup Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Start Firebase emulators
+        working-directory: .
+        run: |
+          firebase emulators:start --import=emulator-data &
+          # Wait for emulators to be ready
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:4400/emulators | grep -q "firestore"; then
+              echo "Emulators ready!"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Boot iOS Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone SE (3rd generation)" | head -1 | grep -oE '[A-F0-9-]{36}')
+          if [ -z "$DEVICE_ID" ]; then
+            DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 16" | head -1 | grep -oE '[A-F0-9-]{36}')
+          fi
+          echo "DEVICE_ID=$DEVICE_ID" >> $GITHUB_ENV
+          xcrun simctl boot "$DEVICE_ID"
+          echo "Booted simulator: $DEVICE_ID"
+
+      - name: Run Patrol checkout tests
+        run: |
+          patrol test \
+            -t patrol_test/checkout_test.dart \
+            --device "$DEVICE_ID"
+
+      - name: Run Patrol critical workflow tests
+        if: success()
+        run: |
+          patrol test \
+            -t patrol_test/critical_workflows_test.dart \
+            --device "$DEVICE_ID"
+
+      - name: Run Human Workflows tests
+        if: success()
+        run: |
+          patrol test \
+            -t integration_test/human_workflows_test.dart \
+            --device "$DEVICE_ID" \
+            --dart-define=EMULATOR_HOST=localhost
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patrol-test-results
+          path: origna_gta/build/*.xcresult
+          retention-days: 7
+
+      - name: Stop emulators
+        if: always()
+        run: kill $(lsof -ti:4400) 2>/dev/null || true

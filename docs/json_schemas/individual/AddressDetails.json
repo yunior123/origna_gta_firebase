@@ -1,0 +1,49 @@
+{
+  "description": "Simplified address for delivery info\nIncludes geolocation coordinates",
+  "properties": {
+    "street": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Street",
+      "type": "string"
+    },
+    "city": {
+      "maxLength": 50,
+      "minLength": 2,
+      "title": "City",
+      "type": "string"
+    },
+    "province": {
+      "maxLength": 2,
+      "minLength": 2,
+      "title": "Province",
+      "type": "string"
+    },
+    "postalCode": {
+      "title": "Postalcode",
+      "type": "string"
+    },
+    "latitude": {
+      "maximum": 90,
+      "minimum": -90,
+      "title": "Latitude",
+      "type": "number"
+    },
+    "longitude": {
+      "maximum": 180,
+      "minimum": -180,
+      "title": "Longitude",
+      "type": "number"
+    }
+  },
+  "required": [
+    "street",
+    "city",
+    "province",
+    "postalCode",
+    "latitude",
+    "longitude"
+  ],
+  "title": "AddressDetails",
+  "type": "object"
+}

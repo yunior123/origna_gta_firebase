@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "ShippingQuantityDiscount": {
+      "description": "Volume-based shipping discount thresholds",
+      "example": {
+        "discountType": "percent",
+        "discountValue": 10.0,
+        "label": "10% off shipping for 5+ items",
+        "minQuantity": 5
+      },
+      "properties": {
+        "minQuantity": {
+          "description": "Minimum quantity to qualify for this discount",
+          "minimum": 2,
+          "title": "Minquantity",
+          "type": "integer"
+        },
+        "discountType": {
+          "default": "percent",
+          "description": "Discount type: percent, fixed, flat_rate",
+          "title": "Discounttype",
+          "type": "string"
+        },
+        "discountValue": {
+          "description": "Discount value (interpretation depends on discountType)",
+          "minimum": 0,
+          "title": "Discountvalue",
+          "type": "number"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional label for display",
+          "title": "Label"
+        }
+      },
+      "required": [
+        "minQuantity",
+        "discountValue"
+      ],
+      "title": "ShippingQuantityDiscount",
+      "type": "object"
+    }
+  },
+  "description": "Seller-specific delivery options with quantity-based pricing",
+  "example": {
+    "additionalItemCostCents": 150,
+    "availableNationwide": true,
+    "costCents": 599,
+    "description": "Standard shipping",
+    "estimatedDays": 5,
+    "maxItemsPerShipment": 10,
+    "quantityDiscounts": [],
+    "type": "standard"
+  },
+  "properties": {
+    "type": {
+      "description": "Delivery type: pickup, standard, express, same_day",
+      "title": "Type",
+      "type": "string"
+    },
+    "description": {
+      "description": "Description of delivery option",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "costCents": {
+      "description": "Base shipping cost in integer cents (CAD). Divide by 100 for display.",
+      "minimum": 0,
+      "title": "Costcents",
+      "type": "integer"
+    },
+    "estimatedDays": {
+      "description": "Estimated delivery days",
+      "maximum": 90,
+      "minimum": 0,
+      "title": "Estimateddays",
+      "type": "integer"
+    },
+    "quantityDiscounts": {
+      "description": "Quantity-based shipping discounts",
+      "items": {
+        "$ref": "#/$defs/ShippingQuantityDiscount"
+      },
+      "title": "Quantitydiscounts",
+      "type": "array"
+    },
+    "maxItemsPerShipment": {
+      "default": 0,
+      "description": "Max items before cost increases (0 = no limit)",
+      "minimum": 0,
+      "title": "Maxitemspershipment",
+      "type": "integer"
+    },
+    "additionalItemCostCents": {
+      "default": 0,
+      "description": "Additional cost per item after maxItemsPerShipment, in integer cents",
+      "minimum": 0,
+      "title": "Additionalitemcostcents",
+      "type": "integer"
+    },
+    "availableNationwide": {
+      "default": true,
+      "description": "Whether this delivery option ships anywhere in Canada (vs local-only)",
+      "title": "Availablenationwide",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "type",
+    "description",
+    "costCents",
+    "estimatedDays"
+  ],
+  "title": "SellerDeliveryOption",
+  "type": "object"
+}

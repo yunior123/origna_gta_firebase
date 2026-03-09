@@ -1,0 +1,22 @@
+{
+    "users": [
+        {
+            "localId": "test-buyer-uid",
+            "email": "yuniorrodriguezo460@gmail.com",
+            "passwordHash": "password",
+            "emailVerified": true
+        },
+        {
+            "localId": "test-seller-uid",
+            "email": "seller1@test.origna.ca",
+            "passwordHash": "password",
+            "emailVerified": true
+        },
+        {
+            "localId": "test-admin-uid",
+            "email": "yr62813@gmail.com",
+            "passwordHash": "password",
+            "emailVerified": true
+        }
+    ]
+}

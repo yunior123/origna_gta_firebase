@@ -1,0 +1,48 @@
+# =============================================================================
+# .copilotignore — Exclude heavy/irrelevant dirs from Copilot context indexing
+# Saves tokens by preventing Copilot from reading files that never need AI edits
+# =============================================================================
+
+# --- Build artifacts & caches ---
+**/__pycache__/
+**/node_modules/
+**/.dart_tool/
+**/build/
+**/.firebase/
+origna_gta/.dart_tool/
+origna_gta/build/
+
+# --- Emulator data (huge binary/JSON dumps) ---
+emulator-data/
+firebase-export-*/
+
+# --- Logs ---
+logs/
+*.log
+firebase-debug.log*
+
+# --- Test output (stale results, not source code) ---
+test-results/
+e2e/test_output.txt
+e2e/test_results_integration.txt
+
+# --- Audit output (AI reports, not source code) ---
+audit/output/
+audit/__pycache__/
+audit/*.md
+
+# --- Generated docs that are too large for context ---
+docs/SYMBOL_MAP.md
+docs/diagrams/
+
+# --- Lock files ---
+e2e/package-lock.json
+origna_gta/pubspec.lock
+
+# --- IDE/OS artifacts ---
+.DS_Store
+*.pid
+*.seed
+
+# --- Large JSON schemas (loaded on-demand via skills, not for indexing) ---
+docs/json_schemas/

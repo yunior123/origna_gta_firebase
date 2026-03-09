@@ -1,0 +1,31 @@
+YOLO mode is enabled. All tool calls will be automatically approved.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+[ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+I need to identify the top 20 most critical test coverage gaps in your OrignaGTA project, focusing on E2E flows, real user scenarios, API endpoints, critical business logic, and security scenarios. I will use the `codebase_investigator` tool to analyze the project's architecture, key functionalities, and security-sensitive areas. Then, I will cross-reference this information with your provided test file lists to pinpoint the most significant gaps.
+Error executing tool codebase_investigator: Subagent Failed: codebase_investigator
+Error: You have exhausted your capacity on this model. Your quota will reset after 2h14m34s.
+Given the constraint of not being able to use `codebase_investigator` at this time, I will proceed by analyzing the provided file lists and making educated inferences about critical functionalities common in a marketplace like OrignaGTA.
+
+Here are the top 20 most critical test coverage gaps identified:
+
+1.  **Dispute Resolution E2E Flow** | CRITICAL | e2e | No explicit E2E test for buyers initiating disputes, sellers responding, and admin arbitration, which is a core marketplace feature.
+2.  **Seller Payouts/Withdrawals E2E Flow** | CRITICAL | e2e | Crucial E2E flow for sellers to request and receive their earnings, including bank account management and verification processes.
+3.  **Chat Functionality E2E** | HIGH | e2e | The `chat.py` backend handler exists, but there's no corresponding E2E test for buyer-seller messaging, read receipts, or notification of new messages.
+4.  **Product Reviews/Ratings E2E** | HIGH | e2e | Essential E2E flow for buyers to submit product reviews and ratings, and for sellers to view and respond to them.
+5.  **Coupon Application & Edge Cases E2E** | HIGH | e2e | While `coupons.py` exists, a dedicated E2E test for applying various coupon types (percentage, fixed, cart-level, product-level), including edge cases like expired or invalid codes, is missing.
+6.  **Guest Checkout Flow E2E** | HIGH | e2e | If the marketplace supports purchasing without an account, a complete E2E test covering the entire guest checkout process is needed.
+7.  **Address Management E2E** | HIGH | e2e | `addresses.py` handles user addresses, but E2E tests for adding, editing, deleting, and setting default shipping/billing addresses in the user profile are not listed.
+8.  **Subscription Management (Upgrade/Downgrade/Cancellation) E2E** | HIGH | e2e | While `premium-subscription.spec.ts` exists, E2E tests for users managing their subscriptions (upgrading, downgrading, or cancelling) are critical for revenue and user retention.
+9.  **Two-Factor Authentication (2FA) E2E** | CRITICAL | e2e | If 2FA is implemented, a comprehensive E2E test covering its setup, login, and recovery mechanisms is a critical security gap.
+10. **Admin Configuration Impact E2E** | HIGH | e2e | An E2E test to verify that critical configuration changes made by an admin (e.g., global shipping rates, new payment methods, feature toggles) correctly propagate and affect the user-facing application.
+11. **Dispute Resolution Backend Logic** | CRITICAL | unit/integration | Backend tests for the complex logic handling dispute initiation, evidence submission, admin review, and financial adjustments/refunds.
+12. **Seller Payouts/Withdrawals Backend Security & Logic** | CRITICAL | unit/integration | Rigorous backend tests for the security of seller payout processes, ensuring correct financial calculations, fraud checks, and prevention of unauthorized withdrawals.
+13. **Chat API Security & Message Integrity** | HIGH | unit/integration | Backend tests for `chat.py` to ensure message security (e.g., no message tampering, unauthorized access to chat histories) and robust rate limiting to prevent abuse.
+14. **User Data Deletion & Privacy Compliance** | CRITICAL | unit/integration | Backend tests verifying that user data is completely and securely removed or anonymized across all related services upon account deletion, adhering to privacy regulations.
+15. **Coupon Backend Edge Cases & Abuse Prevention** | HIGH | unit/integration | Detailed backend tests for `coupons.py` to prevent coupon abuse, including scenarios like double-spending, applying invalid codes, race conditions, and exceeding usage limits.
+16. **Subscription Recurring Billing & Proration Logic** | CRITICAL | unit/integration | Backend tests for `subscriptions.py` and `payment_stripe.py` to ensure accurate recurring billing, prorated charges/refunds upon subscription changes, and correct state transitions.
+17. **Cron Job Idempotency & Failure Recovery** | HIGH | unit/integration | Backend tests for `cron_jobs.py` to ensure scheduled tasks (e.g., notifications, data syncs) are idempotent, execute reliably, and handle transient failures gracefully with retries or alerts.
+18. **Multi-Currency/Internationalization Backend Logic** | HIGH | unit/integration | If the marketplace supports multiple currencies or locales, backend tests verifying correct currency conversion, localized pricing, and regional tax calculations.
+19. **Real-time Inventory Management & Over-selling Prevention** | CRITICAL | unit/integration | Backend tests to ensure accurate, real-time inventory updates across concurrent purchases and robust mechanisms to prevent over-selling, especially for popular products.
+20. **Admin Privileges & Role-Based Access Control (RBAC) Enforcement** | CRITICAL | unit/integration | Detailed backend tests (complementing E2E admin tests) verifying strict enforcement of RBAC for all admin API endpoints, preventing unauthorized privilege escalation or data manipulation.

@@ -1,0 +1,39 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Flutter for Web Build
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - name: Install Flutter Dependencies
+        working-directory: origna_gta
+        run: flutter pub get
+
+      - name: Build Flutter Web
+        working-directory: origna_gta
+        run: flutter build web --release
+
+      # Setup Node.js for Firebase CLI
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # Deploy
+      - name: Deploy to Firebase
+        run: firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}"

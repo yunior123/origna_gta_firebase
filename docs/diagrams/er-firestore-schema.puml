@@ -1,0 +1,365 @@
+@startuml Firestore Database Schema - ER Diagram
+
+!define TABLE(x) class x << (T,#FFAAAA) >>
+!define PK(x) <u>x</u>
+!define FK(x) <i>x</i>
+
+skinparam class {
+    BackgroundColor<<Collection>> LightYellow
+    BackgroundColor<<Subcollection>> LightSkyBlue
+    BorderColor Black
+    ArrowColor Black
+}
+
+' ======== Main Collections ========
+
+class users <<Collection>> {
+    PK(uid) : string [Firebase Auth UID]
+    --
+    email : string [unique, RFC 5322]
+    name : string [2-100 chars]
+    roles : array<string> [admin, seller, buyer]
+    address : map<Address>
+    stripeAccountId : string? [Stripe Connect]
+    airwallexAccountId : string?
+    onboardingCompleted : boolean
+    chargesEnabled : boolean [Stripe status]
+    payoutsEnabled : boolean [Stripe status]
+    suspended : boolean
+    suspendedAt : timestamp?
+    suspensionReason : string?
+    createdAt : timestamp
+    updatedAt : timestamp
+    --
+    **Indexes:**
+    - (email) [unique]
+    - (stripeAccountId) [sparse]
+    - (roles, suspended)
+}
+
+class products <<Collection>> {
+    PK(id) : string [auto-generated]
+    --
+    name : string [max 120 chars]
+    price : number [CAD, 0.01-10000.00]
+    description : string [max 4000 chars]
+    imageUrls : array<string> [max 5 URLs]
+    sellerId : string FK(users.uid)
+    sellerAddress : map<Address>
+    categoryId : number [1-21]
+    stockQuantity : number [≥ 0]
+    rating : number [0.0-5.0]
+    ratingCount : number
+    keywords : array<string> [max 30]
+    isActive : boolean
+    isDigital : boolean
+    weightKg : number?
+    lengthCm : number?
+    widthCm : number?
+    heightCm : number?
+    supplier : map<Supplier>
+    deliveryOptions : array<map>
+    dateCreated : timestamp
+    dateUpdated : timestamp
+    --
+    **Indexes:**
+    - (isActive, categoryId, dateCreated DESC)
+    - (sellerId, dateCreated DESC)
+    - (isActive, rating DESC)
+    - (keywords) [array-contains-any]
+    --
+    **Algolia Sync:** Auto-indexed
+}
+
+class orders <<Collection>> {
+    PK(id) : string [auto-generated]
+    --
+    userId : string FK(users.uid)
+    items : array<OrderItem>
+    totalAmount : number [CAD cents]
+    subtotal : number [cents]
+    taxAmount : number [cents]
+    shippingCost : number [cents]
+    orderStatus : string [enum OrderStatus]
+    paymentStatus : string [enum PaymentStatus]
+    deliveryStatus : string [enum DeliveryStatus]
+    shippingAddress : map<Address>
+    stripeSessionId : string?
+    stripePaymentIntentId : string?
+    airwallexPaymentIntentId : string?
+    paymentProvider : string [stripe | airwallex]
+    captureMethod : string [manual | automatic]
+    shippingApproval : map {
+        status : string
+        requestedAt : timestamp?
+        respondedAt : timestamp?
+        actualCost : number?
+    }
+    sellerCaptures : map<sellerId, CaptureInfo>
+    captureAttempts : number [default 0]
+    requiresManualReview : boolean
+    fraudScore : number [0-100]
+    trackingNumber : string?
+    carrier : string?
+    dateCreated : timestamp
+    updatedAt : timestamp
+    expiresAt : timestamp? [7 days from creation]
+    --
+    **Indexes:**
+    - (userId, dateCreated DESC)
+    - (items.sellerId, dateCreated DESC)
+    - (orderStatus, dateCreated DESC)
+    - (paymentStatus, expiresAt)
+    --
+    **Triggers:** on_order_created → send_emails
+}
+
+class categories <<Collection>> {
+    PK(id) : number [1-21, predefined]
+    --
+    name : string [unique]
+    slug : string [URL-friendly]
+    icon : string [Material Icon name]
+    description : string?
+    parentId : number? [for subcategories]
+    isActive : boolean
+    sortOrder : number
+    --
+    **Fixed Categories:**
+    1: Electronics
+    2: Fashion
+    3: Home & Garden
+    4: Beauty & Health
+    5: Sports & Outdoors
+    ...
+    21: Other
+}
+
+class payouts <<Collection>> {
+    PK(id) : string [auto-generated]
+    --
+    orderId : string FK(orders.id)
+    sellerId : string FK(users.uid)
+    amount : number [cents, seller's share]
+    platformFee : number [2.5% of amount]
+    netAmount : number [amount - platformFee]
+    status : string [pending | processing | completed | failed]
+    stripeTransferId : string?
+    airwallexPayoutId : string?
+    failureReason : string?
+    retryCount : number [default 0]
+    payoutDate : timestamp? [when completed]
+    createdAt : timestamp
+    updatedAt : timestamp
+    --
+    **Indexes:**
+    - (sellerId, createdAt DESC)
+    - (orderId)
+    - (status, createdAt)
+}
+
+class webhook_events <<Collection>> {
+    PK(event_id) : string [Stripe/Airwallex event ID]
+    --
+    provider : string [stripe | airwallex]
+    type : string [event type]
+    processed : boolean
+    timestamp : timestamp
+    metadata : map
+    rawPayload : string? [JSON dump]
+    processingError : string?
+    --
+    **Purpose:** Idempotency
+    **TTL:** 90 days (cleanup cron)
+}
+
+class security_alerts <<Collection>> {
+    PK(id) : string [auto-generated]
+    --
+    type : string [seller_suspended | fraud_detected | ...]
+    severity : string [low | medium | high | critical]
+    userId : string? FK(users.uid)
+    orderId : string? FK(orders.id)
+    productId : string? FK(products.id)
+    details : map
+    timestamp : timestamp
+    resolved : boolean
+    resolvedAt : timestamp?
+    resolvedBy : string? [admin UID]
+    --
+    **Indexes:**
+    - (severity, resolved, timestamp DESC)
+    - (userId, timestamp DESC)
+}
+
+class rate_limits <<Collection>> {
+    PK(identifier) : string [{userId}:{action}]
+    --
+    count : number
+    windowStart : timestamp
+    lastRequest : timestamp
+    action : string [e.g., "create_checkout"]
+    userId : string FK(users.uid)
+    --
+    **Purpose:** Transactional rate limiting
+    **Cleanup:** Cron job (stale > 1 hour)
+    **Fail Mode:** Fail-closed (deny if Firestore down)
+}
+
+' ======== Subcollections ========
+
+class cart <<Subcollection>> {
+    **Parent:** users/{userId}/cart
+    PK(productId) : string FK(products.id)
+    --
+    quantity : number [1-99]
+    addedAt : timestamp
+    --
+    **Purpose:** User shopping cart
+    **Security:** Owner-only access
+}
+
+class favorites <<Subcollection>> {
+    **Parent:** users/{userId}/favorites
+    PK(productId) : string FK(products.id)
+    --
+    addedAt : timestamp
+    --
+    **Purpose:** Wishlist
+}
+
+' ======== Embedded Maps ========
+
+class Address {
+    street : string [max 200 chars]
+    city : string [max 100 chars]
+    province : string [2-char code for CA addresses]
+    postalCode : string [format varies by country]
+    country : string [buyer/shipping: must be Canada; seller: any country]
+    latitude : number? [geocoded]
+    longitude : number? [geocoded]
+    --
+    **Validation:**
+    - Buyer/shipping: Canada-only (Firestore rule)
+    - Seller: any country allowed
+    - Postal code regex (Canadian format for CA addresses)
+    - Province in 13 valid codes (CA addresses)
+}
+
+class OrderItem {
+    productId : string FK(products.id)
+    name : string [snapshot at order time]
+    price : number [cents, snapshot]
+    quantity : number
+    sellerId : string FK(users.uid)
+    imageUrl : string [first image]
+    isDigital : boolean
+    --
+    **Purpose:** Immutable order snapshot
+    **Validation:** Server-side price check
+}
+
+class Supplier {
+    type : string [aliexpress | alibaba | custom | ...]
+    supplierSku : string? [SKU at supplier]
+    cost : number [supplier cost]
+    currency : string [CAD | USD | CNY | ...]
+    url : string? [product link]
+    notes : string?
+}
+
+' ======== Relationships ========
+
+users "1" --> "0..*" products : sellerId
+users "1" --> "0..*" orders : userId (buyer)
+users "1" --> "0..*" payouts : sellerId
+users "1" --> "0..*" cart : owns
+users "1" --> "0..*" favorites : owns
+
+products "0..*" --> "1" categories : categoryId
+products "1" --> "0..*" OrderItem : snapshot in order
+
+orders "1" --> "1..*" OrderItem : items
+orders "0..*" --> "1" users : userId (buyer)
+orders "1" --> "0..*" payouts : generates
+
+payouts "0..*" --> "1" orders : orderId
+payouts "0..*" --> "1" users : sellerId
+
+webhook_events "0..*" ..> orders : processes
+security_alerts "0..*" ..> users : monitors
+security_alerts "0..*" ..> orders : monitors
+
+rate_limits "0..*" --> "1" users : userId
+
+cart "0..*" --> "1" products : productId
+favorites "0..*" --> "1" products : productId
+
+' Embedded relationships
+products *-- Address : sellerAddress
+products *-- Supplier : supplier
+orders *-- Address : shippingAddress
+users *-- Address : address
+
+note top of users
+  **Security Rules:**
+  - Self-read: authenticated
+  - Self-write: authenticated + field validation
+  - Admin-only: roles, suspended
+  - Canada-only: buyer/shipping address.country (sellers can be worldwide)
+end note
+
+note top of products
+  **Algolia Indexing:**
+  - onCreate → index_product_to_algolia
+  - onUpdate → update_algolia_index
+  - onDelete → delete_from_algolia_index
+  
+  **Stock Management:**
+  - Atomic transactions for reservation
+  - Server-side validation only
+end note
+
+note top of orders
+  **State Machine:**
+  pending → confirmed → processing
+    → shipped → delivered
+  
+  Valid transitions enforced by
+  functions/config.py:VALID_TRANSITIONS
+  
+  **Payment Authorization:**
+  - Manual capture (7-day hold)
+  - Auto-capture after delivery confirm
+  - Expiration cron job (daily)
+end note
+
+note bottom of webhook_events
+  **Idempotency Pattern:**
+  
+  try:
+    webhook_events.document(event_id).create({...})
+  except AlreadyExists:
+    return  // Skip reprocessing
+  
+  Prevents duplicate webhook handling
+end note
+
+note bottom of rate_limits
+  **Transactional Rate Limiting:**
+  
+  @firestore.transactional
+  def check_rate_limit(tx, doc_ref):
+    snapshot = doc_ref.get(transaction=tx)
+    if snapshot.exists:
+      count = snapshot.get('count')
+      if count >= max_requests:
+        raise HttpsError('rate_limit_exceeded')
+      tx.update(doc_ref, {'count': count + 1})
+    else:
+      tx.create(doc_ref, {'count': 1, ...})
+  
+  Fail-closed if Firestore unavailable
+end note
+
+@enduml

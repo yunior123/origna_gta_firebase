@@ -1,0 +1,3698 @@
+{
+  "version": "2.3.0",
+  "lastUpdated": "2026-02-25",
+  "description": "Complete Firestore database schema for OrignaGTA e-commerce platform. Marketplace serving Canadian buyers, with sellers worldwide.",
+  "collections": {
+    "users": {
+      "description": "User accounts including buyers, sellers, and admins",
+      "documentId": "{userId} - Firebase Auth UID",
+      "fields": {
+        "uid": {
+          "type": "string",
+          "required": true,
+          "description": "Firebase Auth User ID"
+        },
+        "email": {
+          "type": "string",
+          "required": true,
+          "description": "User email address",
+          "maxLength": 254,
+          "pattern": "RFC 5322 compliant"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "User display name",
+          "maxLength": 60,
+          "pattern": "Letters, spaces, hyphens only"
+        },
+        "roles": {
+          "type": "array<string>",
+          "required": true,
+          "description": "User roles: 'admin', 'seller', 'buyer'",
+          "values": [
+            "admin",
+            "seller",
+            "buyer"
+          ]
+        },
+        "address": {
+          "type": "map",
+          "required": false,
+          "description": "User's default address",
+          "schema": "$ref:Address"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Account creation timestamp"
+        },
+        "customerId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Customer ID for payments"
+        },
+        "lastCheckoutSession": {
+          "type": "string",
+          "required": false,
+          "description": "Last Stripe Checkout Session ID"
+        },
+        "lastOrderId": {
+          "type": "string",
+          "required": false,
+          "description": "Last created order ID"
+        },
+        "lastCheckoutTimestamp": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Timestamp of last checkout"
+        },
+        "lastCartAbandonEmailAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last time an abandoned-cart recovery email was sent to this user (TASK 10)"
+        },
+        "paymentProvider": {
+          "type": "string",
+          "required": false,
+          "description": "Seller payout provider",
+          "values": [
+            "stripe"
+          ],
+          "default": "stripe"
+        },
+        "suspended": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the account is suspended"
+        },
+        "suspendedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the account was suspended"
+        },
+        "unsuspendedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the account was unsuspended"
+        },
+        "country": {
+          "type": "string",
+          "required": false,
+          "description": "Seller country code (e.g., CA, CN)"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp"
+        },
+        "suspendedBy": {
+          "type": "string",
+          "required": false,
+          "description": "Admin UID who suspended the account"
+        },
+        "suspensionReason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason for account suspension"
+        },
+        "mfaEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether MFA is enabled (admin only)"
+        },
+        "lastMfaVerify": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last successful MFA verification"
+        },
+        "lastRoleUpdate": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When roles were last modified"
+        },
+        "lastRoleUpdateBy": {
+          "type": "string",
+          "required": false,
+          "description": "Admin UID who last changed roles"
+        },
+        "emailConsent": {
+          "type": "boolean",
+          "default": true,
+          "description": "User consented to receive transactional emails (CASL)"
+        },
+        "marketingOptIn": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in for marketing emails (CASL)"
+        },
+        "unsubscribedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When user unsubscribed from marketing emails (CASL audit trail)"
+        },
+        "privacyPolicyVersion": {
+          "type": "string",
+          "required": false,
+          "description": "Version of privacy policy accepted by user"
+        },
+        "termsVersion": {
+          "type": "string",
+          "required": false,
+          "description": "Version of terms of service accepted by user"
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "required": false,
+          "default": "en",
+          "description": "User preferred language code (en, fr)"
+        },
+        "consentTimestamp": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When user gave consent (PIPEDA)"
+        },
+        "consentMethod": {
+          "type": "string",
+          "required": false,
+          "description": "How consent was obtained (e.g., 'registration', 'settings')"
+        },
+        "dataProcessingConsent": {
+          "type": "boolean",
+          "default": false,
+          "description": "Consent for data processing per PIPEDA"
+        },
+        "privacyAcceptedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When privacy policy was accepted"
+        },
+        "termsAcceptedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When terms of service were accepted"
+        },
+        "deleted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether user account has been deleted (GDPR)"
+        },
+        "anonymizedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When user data was anonymized after account deletion"
+        },
+        "originalUserDeleted": {
+          "type": "boolean",
+          "required": false,
+          "description": "Flag on orders indicating the original user was deleted (GDPR)"
+        },
+        "isPremium": {
+          "type": "boolean",
+          "default": false,
+          "description": "Cached premium status \u2014 authoritative: subscriptions/{uid}"
+        },
+        "premiumSince": {
+          "type": "timestamp",
+          "nullable": true,
+          "description": "When premium started"
+        },
+        "premiumExpiresAt": {
+          "type": "timestamp",
+          "nullable": true,
+          "description": "Current billing period end"
+        },
+        "stripeSubscriptionId": {
+          "type": "string",
+          "nullable": true,
+          "description": "Stripe Subscription ID"
+        },
+        "notifyNewProducts": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in: FCM notification for new products (premium only)"
+        },
+        "notifyTrending": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in: FCM notification for trending products (premium only)"
+        },
+        "pushEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "User opted into push notifications — false means opt-out"
+        },
+        "fcmToken": {
+          "type": "string",
+          "nullable": true,
+          "description": "FCM device token for push notifications"
+        },
+        "fcmTokenUpdatedAt": {
+          "type": "timestamp",
+          "nullable": true,
+          "description": "Last FCM token update"
+        },
+        "mfaEnrolledAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When MFA was first enrolled (OK for display)"
+        },
+        "isSeller": {
+          "type": "boolean",
+          "default": false,
+          "description": "Quick flag \u2014 seller details live in seller_profiles collection"
+        }
+      },
+      "subcollections": {
+        "addresses": {
+          "description": "User's address book for shipping and billing",
+          "documentId": "{addressId} - auto-generated",
+          "fields": {
+            "addressId": {
+              "type": "string",
+              "description": "Auto-generated document ID"
+            },
+            "isDefault": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether this is the user's default address"
+            },
+            "label": {
+              "type": "string",
+              "required": false,
+              "description": "e.g., Home, Work, Other"
+            },
+            "street": {
+              "type": "string",
+              "required": true
+            },
+            "city": {
+              "type": "string",
+              "required": true
+            },
+            "state": {
+              "type": "string",
+              "required": true
+            },
+            "postalCode": {
+              "type": "string",
+              "required": true
+            },
+            "country": {
+              "type": "string",
+              "default": "Canada"
+            },
+            "phoneNumber": {
+              "type": "string",
+              "required": false
+            },
+            "latitude": {
+              "type": "number",
+              "required": false
+            },
+            "longitude": {
+              "type": "number",
+              "required": false
+            },
+            "apartment": {
+              "type": "string",
+              "required": false
+            }
+          },
+          "indexes": [
+            {
+              "fields": [
+                "isDefault desc"
+              ],
+              "description": "Default address first"
+            }
+          ],
+          "notes": [
+            "Users can have up to 10 addresses. One must be marked as isDefault=true."
+          ]
+        },
+        "cart": {
+          "description": "User's shopping cart items",
+          "documentId": "{cartItemId} (auto-generated)",
+          "fields": {
+            "productId": {
+              "type": "string",
+              "required": true,
+              "description": "Reference to product document"
+            },
+            "quantity": {
+              "type": "number",
+              "required": true,
+              "description": "Quantity in cart"
+            },
+            "createdAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "When item was added to cart"
+            },
+            "variantId": {
+              "type": "string",
+              "required": false,
+              "description": "Variant ID if product has variants"
+            },
+            "variantTitle": {
+              "type": "string",
+              "required": false,
+              "description": "Human-readable variant label"
+            },
+            "variantOptions": {
+              "type": "object",
+              "required": false,
+              "description": "Variant option key-value map"
+            },
+            "variantSku": {
+              "type": "string",
+              "required": false,
+              "description": "Variant SKU"
+            },
+            "priceSnapshot": {
+              "type": "integer",
+              "required": false,
+              "description": "Price in cents at time of cart addition"
+            },
+            "buyerNote": {
+              "type": "string",
+              "required": false,
+              "description": "Optional note from buyer"
+            }
+          }
+        },
+        "favorites": {
+          "description": "User's favorited products",
+          "documentId": "{productId}",
+          "fields": {
+            "productId": {
+              "type": "string",
+              "required": true,
+              "description": "Reference to product document"
+            },
+            "dateFavorited": {
+              "type": "timestamp",
+              "required": true,
+              "description": "When product was favorited"
+            }
+          }
+        },
+        "warehouses": {
+          "description": "Seller shipping locations (warehouses or personal/business addresses). One seller can have multiple warehouses across different cities or countries.",
+          "documentId": "{warehouseId} - auto-generated",
+          "fields": {
+            "warehouseId": {
+              "type": "string",
+              "required": true,
+              "description": "Auto-generated document ID, also stored as field for convenience"
+            },
+            "sellerId": {
+              "type": "string",
+              "required": true,
+              "description": "Parent seller UID (mirrors the user document ID)"
+            },
+            "name": {
+              "type": "string",
+              "required": true,
+              "description": "Human label, e.g. 'Toronto Warehouse' or 'Home Office'"
+            },
+            "type": {
+              "type": "string",
+              "required": true,
+              "enum": [
+                "warehouse",
+                "personal"
+              ],
+              "description": "Warehouse type. 'personal' covers small-business/home addresses."
+            },
+            "address": {
+              "type": "map",
+              "required": true,
+              "description": "Physical address for this shipping location",
+              "schema": "$ref:Address"
+            },
+            "isDefault": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether this is the seller's primary/default shipping location"
+            },
+            "createdAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "Creation timestamp"
+            },
+            "updatedAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "Last update timestamp"
+            }
+          },
+          "indexes": [
+            {
+              "fields": [
+                "isDefault desc",
+                "createdAt asc"
+              ],
+              "description": "Default warehouse first, then oldest first"
+            }
+          ],
+          "notes": [
+            "Only sellers have warehouses. Security rules allow read/write only to the owner (sellerId == request.auth.uid).",
+            "A seller may have 1\u2013N warehouses across different cities or countries.",
+            "Products reference warehouse IDs via the warehouseIds array field."
+          ]
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "stripeAccountId"
+          ],
+          "description": "For looking up users by Stripe Connect account"
+        },
+        {
+          "fields": [
+            "roles",
+            "createdAt desc"
+          ],
+          "description": "For admin seller listing"
+        }
+      ]
+    },
+    "products": {
+      "description": "Product listings",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Product name",
+          "maxLength": 120
+        },
+        "nameF": {
+          "type": "string",
+          "required": false,
+          "description": "French product name (Quebec Bill 96 compliance)",
+          "maxLength": 200
+        },
+        "price": {
+          "type": "number",
+          "required": true,
+          "description": "SELLING price in CAD (Canadian Dollars only). All prices on the platform are in CAD."
+        },
+        "compareAtPrice": {
+          "type": "number",
+          "required": false,
+          "description": "Original or MSRP price in CAD, must be greater than price. Used for strikethrough pricing display."
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "Product description",
+          "maxLength": 4000
+        },
+        "descriptionF": {
+          "type": "string",
+          "required": false,
+          "description": "French product description",
+          "maxLength": 5000
+        },
+        "imageUrls": {
+          "type": "array<string>",
+          "required": true,
+          "description": "Product image URLs (max 5)",
+          "maxItems": 5
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Reference to seller's user document"
+        },
+        "sellerSku": {
+          "type": "string",
+          "required": false,
+          "description": "Seller-defined SKU. Unique per seller (sellerId + sellerSku). Used for deduplication \u2014 a product is rejected (isActive=false) if a duplicate sellerId+sellerSku already exists.",
+          "maxLength": 100
+        },
+        "sellerAddress": {
+          "type": "map",
+          "required": false,
+          "description": "Seller's manual shipping address. Mutually exclusive with warehouseIds \u2014 physical products must have either sellerAddress OR warehouseIds, not both.",
+          "schema": "$ref:Address"
+        },
+        "warehouseIds": {
+          "type": "array<string>",
+          "required": false,
+          "description": "IDs of warehouses (from users/{sellerId}/warehouses) this product ships from. When set, overrides sellerAddress. Stock is tracked per-warehouse via warehouseStock.",
+          "maxItems": 50
+        },
+        "shipFromCity": {
+          "type": "string",
+          "required": false,
+          "description": "Denormalized city from the primary (first) warehouse. Set at write time by product_repository. Only present when warehouseIds is set."
+        },
+        "shipFromProvince": {
+          "type": "string",
+          "required": false,
+          "description": "Denormalized province/state from the primary warehouse."
+        },
+        "shipFromCountry": {
+          "type": "string",
+          "required": false,
+          "description": "Denormalized country from the primary warehouse."
+        },
+        "shipFromCountries": {
+          "type": "array<string>",
+          "required": false,
+          "description": "Deduplicated list of all countries across all warehouseIds. Powers smart multi-country display on product cards: 1 country\u2192'Ships from: City, Province, Country'; 2\u20133\u2192'Ships from: Canada \u00b7 Germany'; 4+\u2192'Ships from: N locations worldwide'."
+        },
+        "categoryId": {
+          "type": "number",
+          "required": true,
+          "description": "Product category (1-21)"
+        },
+        "stockQuantity": {
+          "type": "number",
+          "required": true,
+          "description": "Available stock (0 = sold out)"
+        },
+        "rating": {
+          "type": "number",
+          "default": 0.0,
+          "description": "Average rating (0-5)"
+        },
+        "ratingCount": {
+          "type": "number",
+          "default": 0,
+          "description": "Number of ratings received"
+        },
+        "keywords": {
+          "type": "array<string>",
+          "required": true,
+          "description": "Keywords for search functionality",
+          "maxItems": 30
+        },
+        "approvalRejectionReason": {
+          "type": "string",
+          "required": false,
+          "description": "Admin rejection reason (set only when approvalStatus=rejected)"
+        },
+        "deletedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When product was soft deleted"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Product creation date"
+        },
+        "lifecycleStatus": {
+          "type": "string",
+          "default": "draft",
+          "description": "Single lifecycle state: draft|under_review|approved|active|paused|archived|rejected. Replaces isActive+status+approvalStatus.",
+          "values": [
+            "draft",
+            "under_review",
+            "approved",
+            "active",
+            "paused",
+            "archived",
+            "rejected"
+          ]
+        },
+        "isDigital": {
+          "type": "boolean",
+          "default": false,
+          "required": false,
+          "description": "True if product is digital (no shipping required). Examples: ebooks, software, courses"
+        },
+        "weightKg": {
+          "type": "number",
+          "required": false,
+          "description": "Product weight in kilograms"
+        },
+        "lengthCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package length in centimeters"
+        },
+        "widthCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package width in centimeters"
+        },
+        "heightCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package height in centimeters"
+        },
+        "isLocalDeliveryOnly": {
+          "type": "boolean",
+          "default": false,
+          "required": false,
+          "description": "Only available for local delivery"
+        },
+        "isPerishable": {
+          "type": "boolean",
+          "default": false,
+          "required": false,
+          "description": "Perishable product (affects delivery options)"
+        },
+        "estimatedShipDays": {
+          "type": "number",
+          "default": 3,
+          "required": false,
+          "description": "Estimated shipping days"
+        },
+        "deliveryOptions": {
+          "type": "array<map>",
+          "required": false,
+          "description": "Seller-defined delivery options with quantity-based pricing",
+          "itemSchema": {
+            "type": {
+              "type": "string",
+              "required": true,
+              "description": "Delivery type: pickup, standard, express, same_day, custom"
+            },
+            "description": {
+              "type": "string",
+              "required": true,
+              "description": "Description of delivery option"
+            },
+            "costCents": {
+              "type": "number",
+              "required": true,
+              "description": "Base cost in cents (CAD)"
+            },
+            "estimatedDays": {
+              "type": "number",
+              "required": true,
+              "description": "Estimated delivery days"
+            },
+            "quantityDiscounts": {
+              "type": "array<map>",
+              "required": false,
+              "description": "Quantity-based shipping discounts",
+              "itemSchema": {
+                "minQuantity": {
+                  "type": "number",
+                  "required": true,
+                  "description": "Minimum quantity to qualify"
+                },
+                "discountType": {
+                  "type": "string",
+                  "default": "percent",
+                  "description": "Discount type: percent, fixed, flat_rate"
+                },
+                "discountValue": {
+                  "type": "number",
+                  "required": true,
+                  "description": "Discount value"
+                },
+                "label": {
+                  "type": "string",
+                  "required": false,
+                  "description": "Optional display label"
+                }
+              }
+            },
+            "maxItemsPerShipment": {
+              "type": "number",
+              "default": 0,
+              "description": "Max items before cost increases (0 = no limit)"
+            },
+            "additionalItemCostCents": {
+              "type": "number",
+              "default": 0,
+              "description": "Additional cost in cents per item after maxItemsPerShipment"
+            },
+            "availableNationwide": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether option is available for international suppliers"
+            }
+          }
+        },
+        "minimumOrderQuantity": {
+          "type": "number",
+          "default": 1,
+          "required": false,
+          "description": "Minimum order quantity"
+        },
+        "freeShipping": {
+          "type": "boolean",
+          "default": false,
+          "required": false,
+          "description": "Free shipping offered by seller"
+        },
+        "taxCode": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe tax code override"
+        },
+        "supplier": {
+          "type": "map",
+          "required": false,
+          "description": "Supplier information for dropshipping/marketplace products",
+          "schema": {
+            "type": {
+              "type": "string",
+              "required": true,
+              "description": "Supplier platform: aliexpress, alibaba, 1688, dhgate, temu, cjdropshipping, amazon_usa, custom, etc."
+            },
+            "supplierSku": {
+              "type": "string",
+              "required": false,
+              "description": "Supplier's product SKU"
+            },
+            "supplierUrl": {
+              "type": "string",
+              "required": false,
+              "description": "Direct URL to supplier product"
+            },
+            "cost": {
+              "type": "number",
+              "required": false,
+              "description": "Cost price from supplier"
+            },
+            "currency": {
+              "type": "string",
+              "default": "CAD",
+              "description": "Currency of SUPPLIER cost price (for cost tracking). Selling price is always CAD. Supported: CAD, USD, EUR, CNY, JPY, KRW, etc."
+            },
+            "shippingDays": {
+              "type": "string",
+              "required": false,
+              "description": "Estimated shipping days range (e.g., '7-15')"
+            },
+            "hasTracking": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether supplier provides tracking"
+            },
+            "notes": {
+              "type": "string",
+              "required": false,
+              "description": "Internal notes about supplier"
+            }
+          }
+        },
+        "inventory": {
+          "type": "map",
+          "required": false,
+          "description": "Inventory management configuration",
+          "schema": {
+            "managed": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether inventory is actively managed"
+            },
+            "trackQuantity": {
+              "type": "boolean",
+              "default": true,
+              "description": "Track stock quantity (false = unlimited)"
+            },
+            "allowBackorder": {
+              "type": "boolean",
+              "default": false,
+              "description": "Allow orders when out of stock"
+            },
+            "lowStockThreshold": {
+              "type": "number",
+              "default": 5,
+              "description": "Alert threshold for low stock"
+            },
+            "reservationHoldMinutes": {
+              "type": "number",
+              "default": 30,
+              "description": "How long to hold inventory during checkout"
+            }
+          }
+        },
+        "deliverySpeed": {
+          "type": "string",
+          "required": false,
+          "description": "Delivery speed tier",
+          "values": [
+            "standard",
+            "express",
+            "same_day",
+            "economy"
+          ]
+        },
+        "lastLowStockAlertAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last time a low-stock alert email was sent for this product. Written by check_low_stock_alerts cron. Used to enforce the 23-hour cooldown between alerts."
+        },
+        "trendingScore": {
+          "type": "integer",
+          "default": 0,
+          "description": "Computed trending score (views + purchases\u00d73 + favorites\u00d72 in last 48h)"
+        },
+        "viewCount": {
+          "type": "integer",
+          "default": 0,
+          "description": "Total product page views"
+        },
+        "purchaseCount": {
+          "type": "integer",
+          "default": 0,
+          "description": "Total purchases"
+        },
+        "isTrending": {
+          "type": "boolean",
+          "default": false,
+          "description": "Currently in trending list (top 20)"
+        },
+        "trendingAt": {
+          "type": "timestamp",
+          "nullable": true,
+          "description": "When product last entered trending"
+        },
+        "hasVariants": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether this product has variants (size, color, etc.). N-09."
+        },
+        "variants": {
+          "type": "array<map>",
+          "required": false,
+          "default": [],
+          "description": "List of variant objects: {variantId, optionValues, price?, stockQuantity, sku?, isActive}. N-09."
+        },
+        "variantOptions": {
+          "type": "array<map>",
+          "required": false,
+          "default": [],
+          "description": "Variant option definitions: [{name: 'Size', values: ['S','M','L']}, ...]. N-09."
+        },
+        "subcategory": {
+          "type": "string",
+          "required": false,
+          "nullable": true,
+          "maxLength": 100,
+          "description": "Optional subcategory within the main category. N-11."
+        },
+        "condition": {
+          "type": "string",
+          "required": false,
+          "description": "Product condition: new, like_new, good, fair, for_parts"
+        },
+        "priceCents": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Price in integer cents \u2014 derived from price field at write time, used for all arithmetic (9.99 \u2192 999)"
+        }
+      },
+      "subcollections": {
+        "inventoryLevels": {
+          "description": "Stock levels per warehouse for fast transaction processing.",
+          "documentId": "{warehouseId}",
+          "fields": {
+            "availableQuantity": {
+              "type": "number",
+              "required": true,
+              "description": "Current available stock for this warehouse"
+            },
+            "lastSyncedAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "When this inventory level was synced"
+            }
+          }
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "sellerId",
+            "createdAt desc"
+          ],
+          "description": "For seller's product listings"
+        },
+        {
+          "fields": [
+            "isActive",
+            "categoryId",
+            "createdAt desc"
+          ],
+          "description": "For category browsing (active only)"
+        },
+        {
+          "fields": [
+            "isActive",
+            "keywords",
+            "createdAt desc"
+          ],
+          "description": "For product search (active only)"
+        },
+        {
+          "fields": [
+            "isActive",
+            "__name__"
+          ],
+          "description": "For ID batch fetch with active filter"
+        }
+      ]
+    },
+    "orders": {
+      "description": "Customer orders",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "userId": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer's user ID"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Optimistic concurrency version (Medusa/Commercetools pattern)"
+        },
+        "customerEmail": {
+          "type": "string",
+          "required": false,
+          "description": "Customer email for notifications (optional, can be fetched from user doc)"
+        },
+        "customerId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Customer ID"
+        },
+        "items": {
+          "type": "array<map>",
+          "required": true,
+          "description": "Order items with delivery tracking",
+          "schema": "$ref:OrderItem"
+        },
+        "sellerIds": {
+          "type": "array<string>",
+          "required": false,
+          "description": "Unique seller IDs in this order (computed from items)"
+        },
+        "productIds": {
+          "type": "array<string>",
+          "required": false,
+          "description": "Unique product IDs in this order (computed from items, enables chat gate query)"
+        },
+        "subtotalCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Sum of item prices in cents (prevents rounding errors)"
+        },
+        "taxes": {
+          "type": "map<string, number>",
+          "required": false,
+          "description": "Tax breakdown (GST, PST, HST, QST) - for display only"
+        },
+        "taxAmountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Total tax in cents"
+        },
+        "shippingCostCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Calculated shipping cost in cents"
+        },
+        "totalAmountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Grand total in cents (subtotal + taxes + shipping)"
+        },
+        "currency": {
+          "type": "string",
+          "default": "cad",
+          "description": "Currency code (always 'cad' \u2014 all transactions in CAD)"
+        },
+        "orderStatus": {
+          "type": "string",
+          "required": true,
+          "description": "Order fulfillment status",
+          "values": [
+            "pending",
+            "confirmed",
+            "processing",
+            "shipped",
+            "in_transit",
+            "delivered",
+            "cancelled",
+            "failed",
+            "expired",
+            "refunded",
+            "partially_refunded",
+            "disputed"
+          ]
+        },
+        "paymentStatus": {
+          "type": "string",
+          "required": true,
+          "description": "Payment status",
+          "values": [
+            "awaiting_payment",
+            "processing",
+            "paid",
+            "payment_failed",
+            "refunded",
+            "session_expired",
+            "authorized",
+            "captured",
+            "cancelled",
+            "authorization_expired",
+            "capturing",
+            "cancelling",
+            "expiring",
+            "disputed",
+            "partially_refunded",
+            "voided"
+          ]
+        },
+        "shippingAddress": {
+          "type": "map",
+          "required": true,
+          "description": "Delivery address details",
+          "schema": "$ref:Address"
+        },
+        "stripeSessionId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Checkout Session ID"
+        },
+        "stripePaymentIntentId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Payment Intent ID"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Order creation timestamp (used by Flutter queries)"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp"
+        },
+        "captureAttempts": {
+          "type": "integer",
+          "default": 0,
+          "description": "Number of payment capture attempts (max 3)"
+        },
+        "capturedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When payment was captured"
+        },
+        "expiresAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Authorization expiry (7 days from creation)"
+        },
+        "confirmedByClient": {
+          "type": "boolean",
+          "default": false,
+          "description": "Buyer confirmed receipt of all items"
+        },
+        "confirmedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When order was confirmed by buyer"
+        },
+        "autoConfirmed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether confirmation was automatic after 5 days"
+        },
+        "autoCaptured": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether payment was auto-captured by cron job"
+        },
+        "sellerPayouts": {
+          "type": "array<map>",
+          "required": false,
+          "description": "Per-seller payout breakdown",
+          "schema": "$ref:SellerPayout"
+        },
+        "platformFeeTotalCents": {
+          "type": "integer",
+          "default": 0,
+          "description": "Total platform fee collected (2.5%)"
+        },
+        "payoutStatus": {
+          "type": "string",
+          "default": "pending",
+          "description": "Payout status",
+          "values": [
+            "pending",
+            "processing",
+            "completed",
+            "partial",
+            "failed"
+          ]
+        },
+        "ratings": {
+          "type": "map<string, number>",
+          "required": false,
+          "description": "Product ratings by productId (server-managed)"
+        },
+        "refundAmountCents": {
+          "type": "integer",
+          "required": false,
+          "description": "Amount refunded if applicable"
+        },
+        "refundedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When refund was processed"
+        },
+        "shippingApprovalStatus": {
+          "type": "string",
+          "default": "not_required",
+          "description": "Shipping approval status",
+          "values": [
+            "not_required",
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "shippingApprovalRequired": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether shipping cost approval is required from buyer"
+        },
+        "actualShippingCents": {
+          "type": "integer",
+          "default": 0,
+          "description": "Actual shipping cost set by seller (for approval flow)"
+        },
+        "pendingTotalCents": {
+          "type": "integer",
+          "default": 0,
+          "description": "Pending total awaiting shipping approval"
+        },
+        "shippingApproval": {
+          "type": "map",
+          "required": false,
+          "description": "Shipping approval details (actualCost, respondedAt, etc.)"
+        },
+        "stockRestored": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether stock was restored after cancellation"
+        },
+        "cancelledBy": {
+          "type": "string",
+          "required": false,
+          "description": "Who cancelled the order (buyer, seller, system, admin)"
+        },
+        "cancelledAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the order was cancelled"
+        },
+        "cancellationReason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason for cancellation"
+        },
+        "disputeId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe dispute ID if order is disputed"
+        },
+        "preDisputeStatus": {
+          "type": "string",
+          "required": false,
+          "description": "Order status before dispute was filed (for restoration on dispute won)"
+        },
+        "disputedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the dispute was filed"
+        },
+        "disputeResolvedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the dispute was resolved"
+        },
+        "disputeResolution": {
+          "type": "string",
+          "required": false,
+          "description": "Dispute outcome (won, lost)",
+          "values": [
+            "won",
+            "lost"
+          ]
+        },
+        "requiresManualReview": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether order requires manual admin review"
+        },
+        "manualReviewReason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason manual review is required"
+        },
+        "payoutErrors": {
+          "type": "array<string>",
+          "required": false,
+          "description": "List of payout error messages"
+        },
+        "taxExemption": {
+          "type": "map",
+          "required": false,
+          "description": "B2B tax exemption details (GST number)",
+          "schema": {
+            "gstNumber": {
+              "type": "string",
+              "description": "Canadian GST/HST number (e.g., 123456789RT0001)"
+            },
+            "updatedAt": {
+              "type": "timestamp",
+              "description": "When GST number was added"
+            }
+          }
+        },
+        "taxExempt": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether order is tax exempt (B2B reverse charge applied)"
+        },
+        "itemTaxes": {
+          "type": "array<map>",
+          "required": false,
+          "description": "Per-item tax breakdown",
+          "schema": {
+            "productId": "string",
+            "taxCents": "integer",
+            "taxRate": "number"
+          }
+        },
+        "couponCode": {
+          "type": "string",
+          "required": false,
+          "description": "N-07: Promo/coupon code applied to this order"
+        },
+        "discountAmountCents": {
+          "type": "number",
+          "default": 0,
+          "description": "N-07: Discount applied in cents (from coupon)"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "default": 1,
+          "description": "Schema layout version for migration tracking"
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "userId",
+            "paymentStatus",
+            "createdAt desc"
+          ],
+          "description": "For buyer's order history (Flutter uses createdAt)"
+        },
+        {
+          "fields": [
+            "sellerIds",
+            "paymentStatus",
+            "createdAt desc"
+          ],
+          "description": "For seller's order view"
+        },
+        {
+          "fields": [
+            "paymentStatus",
+            "createdAt desc"
+          ],
+          "description": "For admin orders by status"
+        },
+        {
+          "fields": [
+            "stripeSessionId",
+            "paymentStatus"
+          ],
+          "description": "For session lookup"
+        },
+        {
+          "fields": [
+            "paymentStatus",
+            "confirmedByClient",
+            "payoutStatus"
+          ],
+          "description": "For auto-release payout job"
+        },
+        {
+          "fields": [
+            "paymentStatus",
+            "expiresAt"
+          ],
+          "description": "For expired authorization job"
+        },
+        {
+          "fields": [
+            "paymentStatus",
+            "captureMethod"
+          ],
+          "description": "For expiring authorization job"
+        },
+        {
+          "fields": [
+            "userId",
+            "idempotencyKey"
+          ],
+          "description": "For idempotent checkout lookups"
+        },
+        {
+          "fields": [
+            "stripePaymentIntentId"
+          ],
+          "description": "For webhook lookups"
+        },
+        {
+          "fields": [
+            "stripeSessionId"
+          ],
+          "description": "For checkout completion"
+        }
+      ],
+      "subcollections": {
+        "events": {
+          "description": "Immutable event log for order lifecycle transitions",
+          "documentId": "{eventId} (auto-generated)",
+          "fields": {
+            "eventType": {
+              "type": "string",
+              "required": true,
+              "description": "One of OrderEventTypes.*"
+            },
+            "fromStatus": {
+              "type": "string",
+              "required": false,
+              "description": "Previous status before transition"
+            },
+            "toStatus": {
+              "type": "string",
+              "required": false,
+              "description": "New status after transition"
+            },
+            "actor": {
+              "type": "string",
+              "required": true,
+              "description": "UID or 'system' or 'stripe_webhook'"
+            },
+            "actorType": {
+              "type": "string",
+              "required": true,
+              "description": "'seller'|'buyer'|'admin'|'system'"
+            },
+            "metadata": {
+              "type": "object",
+              "required": false,
+              "description": "Additional context (e.g. refund amount, tracking number)"
+            },
+            "createdAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "When the event occurred"
+            }
+          }
+        }
+      }
+    },
+    "payouts": {
+      "description": "Seller payout records (Stripe Transfers)",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "orderId": {
+          "type": "string",
+          "required": true,
+          "description": "Associated order ID"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller user ID"
+        },
+        "amountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Total seller revenue before platform fee (in cents)"
+        },
+        "platformFeeCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Platform fee deducted (2.5% in cents)"
+        },
+        "netAmountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Net payout to seller after fee (in cents)"
+        },
+        "status": {
+          "type": "string",
+          "required": true,
+          "description": "Payout status",
+          "values": [
+            "pending",
+            "processing",
+            "completed",
+            "partial",
+            "failed",
+            "reversed",
+            "partially_reversed",
+            "reversed_dispute"
+          ]
+        },
+        "stripeTransferId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Transfer ID"
+        },
+        "reversalId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Transfer Reversal ID (if reversed)"
+        },
+        "partialReversals": {
+          "type": "array<map>",
+          "required": false,
+          "description": "List of partial reversals for per-item refunds",
+          "schema": {
+            "reversalId": "string - Stripe Reversal ID",
+            "amountCents": "integer - Amount reversed in cents",
+            "productId": "string - Product ID refunded",
+            "createdAt": "timestamp"
+          }
+        },
+        "disputeId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Dispute ID (if reversed due to dispute)"
+        },
+        "failureReason": {
+          "type": "string",
+          "required": false,
+          "description": "Failure reason (if status=failed)"
+        },
+        "payoutDate": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When payout was completed"
+        },
+        "reversedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When payout was reversed"
+        },
+        "autoCaptured": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether payout was created by auto-capture cron"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Payout record creation time"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp"
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "orderId"
+          ],
+          "description": "Query payouts by order"
+        },
+        {
+          "fields": [
+            "sellerId",
+            "status"
+          ],
+          "description": "Query seller payouts"
+        },
+        {
+          "fields": [
+            "stripeTransferId"
+          ],
+          "description": "Webhook lookup by transfer ID"
+        }
+      ]
+    },
+    "webhook_events": {
+      "description": "Idempotency tracking for webhook processing",
+      "documentId": "{stripeEventId}",
+      "fields": {
+        "eventId": {
+          "type": "string",
+          "required": true,
+          "description": "Stripe event ID"
+        },
+        "eventType": {
+          "type": "string",
+          "required": true,
+          "description": "Event type"
+        },
+        "receivedAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When event was received"
+        },
+        "processed": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether event has been processed"
+        },
+        "processedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When processing completed"
+        },
+        "processingStatus": {
+          "type": "string",
+          "required": false,
+          "description": "Processing result"
+        },
+        "orderId": {
+          "type": "string",
+          "required": false,
+          "description": "Associated order ID"
+        },
+        "errorMessage": {
+          "type": "string",
+          "required": false,
+          "description": "Error if failed"
+        },
+        "livemode": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether event is from live mode"
+        }
+      }
+    },
+    "security_alerts": {
+      "description": "Security alert records for suspicious activity, payment issues, and system health",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "type": {
+          "type": "string",
+          "required": true,
+          "description": "Alert type (SecurityAlertTypes constant)",
+          "values": [
+            "algolia_sync_issue",
+            "dispute_created",
+            "role_change",
+            "seller_suspended",
+            "seller_unsuspended",
+            "payment_provider_disabled",
+            "refund_reversal_failed",
+            "payout_failed",
+            "refund_failed",
+            "seller_account_changed",
+            "payout_record_incomplete",
+            "mfa_low_backup_codes",
+            "seller_kyc_failed",
+            "invalid_gst_attempt",
+            "blocked_gst_attempt",
+            "shared_gst_number",
+            "tax_exemption_pending_review",
+            "suspicious_tax_exemption",
+            "auth_deletion_failed"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "required": true,
+          "values": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "description": "Alert severity"
+        },
+        "resolved": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether alert has been resolved"
+        },
+        "resolvedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the alert was resolved"
+        },
+        "resolution": {
+          "type": "string",
+          "required": false,
+          "description": "Resolution description"
+        },
+        "timestamp": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Alert creation timestamp (SERVER_TIMESTAMP)"
+        },
+        "orderId": {
+          "type": "string",
+          "required": false,
+          "description": "Associated order ID (for dispute/payout alerts)"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": false,
+          "description": "Associated seller ID"
+        },
+        "userId": {
+          "type": "string",
+          "required": false,
+          "description": "Affected user ID"
+        },
+        "chargeId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe charge ID (dispute alerts)"
+        },
+        "accountId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe account ID"
+        },
+        "reason": {
+          "type": "string",
+          "required": false,
+          "description": "Alert reason"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "required": false,
+          "description": "Client-generated idempotency key to prevent duplicate order creation"
+        },
+        "paymentIntentId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Payment Intent ID"
+        },
+        "destination": {
+          "type": "string",
+          "required": false,
+          "description": "Transfer destination account"
+        },
+        "failureMessage": {
+          "type": "string",
+          "required": false,
+          "description": "Failure detail message"
+        },
+        "firestoreCount": {
+          "type": "integer",
+          "required": false,
+          "description": "Firestore product count (Algolia sync alerts)"
+        },
+        "algoliaCount": {
+          "type": "integer",
+          "required": false,
+          "description": "Algolia product count (Algolia sync alerts)"
+        },
+        "mismatchPercent": {
+          "type": "number",
+          "required": false,
+          "description": "Mismatch percentage (Algolia sync alerts)"
+        },
+        "adminId": {
+          "type": "string",
+          "required": false,
+          "description": "Admin who triggered action (role_change alerts)"
+        },
+        "targetUserId": {
+          "type": "string",
+          "required": false,
+          "description": "User targeted by admin action"
+        },
+        "oldRoles": {
+          "type": "array<string>",
+          "required": false,
+          "description": "Previous roles (role_change alerts)"
+        },
+        "newRoles": {
+          "type": "array<string>",
+          "required": false,
+          "description": "New roles (role_change alerts)"
+        },
+        "productsDeactivated": {
+          "type": "integer",
+          "required": false,
+          "description": "Count of products deactivated (seller_suspended alerts)"
+        },
+        "ordersCancelled": {
+          "type": "integer",
+          "required": false,
+          "description": "Count of orders cancelled (seller_suspended alerts)"
+        },
+        "errorCode": {
+          "type": "string",
+          "required": false,
+          "description": "Error code from Stripe or other service"
+        },
+        "payoutId": {
+          "type": "string",
+          "required": false,
+          "description": "Payout document ID"
+        },
+        "transferId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Transfer ID"
+        },
+        "reversalErrors": {
+          "type": "array<string>",
+          "required": false,
+          "description": "List of reversal error messages"
+        }
+      }
+    },
+    "rate_limits": {
+      "description": "Rate limiting records for API protection. Cleaned up by cleanup_stale_rate_limits cron every 30 min.",
+      "documentId": "{identifier}",
+      "fields": {
+        "count": {
+          "type": "integer",
+          "required": true,
+          "description": "Request count in current window"
+        },
+        "first_request": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Start of rate limit window"
+        },
+        "last_request": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Most recent request in window (used by cleanup cron)"
+        }
+      }
+    },
+    "config": {
+      "description": "Application configuration (feature flags, settings)",
+      "documentId": "{configKey}",
+      "fields": {
+        "key": {
+          "type": "string",
+          "required": true,
+          "description": "Configuration key"
+        },
+        "value": {
+          "type": "any",
+          "required": true,
+          "description": "Configuration value"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "required": false,
+          "description": "Admin who last updated"
+        }
+      }
+    },
+    "product_ratings": {
+      "description": "Individual product ratings and reviews",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Rated product ID"
+        },
+        "userId": {
+          "type": "string",
+          "required": true,
+          "description": "Rating user ID"
+        },
+        "orderId": {
+          "type": "string",
+          "required": true,
+          "description": "Associated order ID"
+        },
+        "rating": {
+          "type": "number",
+          "required": true,
+          "description": "Rating value (1-5)"
+        },
+        "reviewImageUrls": {
+          "type": "array<string>",
+          "required": false,
+          "description": "Optional review photo URLs (max 3, must be CDN hosted)"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Rating timestamp"
+        },
+        "helpfulCount": {
+          "type": "number",
+          "default": 0,
+          "description": "N-04: Number of users who found this review helpful"
+        },
+        "helpfulVoterIds": {
+          "type": "array<string>",
+          "default": [],
+          "description": "DEPRECATED: Do not use. Votes are tracked in review_votes/{voterId} subcollection (product_ratings/{ratingId}/review_votes/{userId}) to avoid unbounded array growth. This field is kept for schema backward-compat only."
+        },
+        "sellerReply": {
+          "type": "string",
+          "required": false,
+          "maxLength": 500,
+          "description": "N-03: Seller reply to this review"
+        },
+        "sellerReplyAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "N-03: When the seller replied"
+        },
+        "verifiedPurchase": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "True when the reviewer has a confirmed delivered order for this product"
+        },
+        "isFlagged": {
+          "type": "boolean",
+          "default": false,
+          "indexed": true
+        },
+        "hasPhotos": {
+          "type": "boolean",
+          "default": false,
+          "indexed": true
+        },
+        "review": {
+          "type": "string",
+          "required": false,
+          "description": "Review text (field name is 'review', not 'comment')"
+        }
+      }
+    },
+    "coupons": {
+      "description": "N-07: Coupon/promo code system. Document ID = coupon code (uppercase)",
+      "documentId": "{couponCode \u2014 uppercase alphanumeric 4-20 chars}",
+      "fields": {
+        "couponCode": {
+          "type": "string",
+          "required": true,
+          "description": "Coupon code (document ID, uppercase, 4-20 alphanumeric chars)"
+        },
+        "discountType": {
+          "type": "string",
+          "required": true,
+          "description": "Discount type",
+          "values": [
+            "percent",
+            "fixed_cents"
+          ]
+        },
+        "discountValue": {
+          "type": "number",
+          "required": true,
+          "description": "Discount magnitude: percent 1-100, fixed_cents min 100"
+        },
+        "minOrderCents": {
+          "type": "number",
+          "required": false,
+          "description": "Minimum cart subtotal in cents required to use this coupon"
+        },
+        "maxUsesTotal": {
+          "type": "number",
+          "required": false,
+          "description": "Maximum total uses across all users (null = unlimited)"
+        },
+        "maxUsesPerUser": {
+          "type": "number",
+          "required": false,
+          "default": 1,
+          "description": "Maximum uses per individual user (default 1)"
+        },
+        "usedCount": {
+          "type": "number",
+          "default": 0,
+          "description": "Total number of times this coupon has been redeemed"
+        },
+        "expiresAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Expiry date/time (null = never expires)"
+        },
+        "isActive": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether the coupon is currently active"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": false,
+          "description": "Seller ID if this is a seller-specific coupon (null = platform-wide)"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When the coupon was created"
+        },
+        "createdByAdminId": {
+          "type": "string",
+          "required": true,
+          "description": "Admin UID who created this coupon"
+        }
+      },
+      "subcollections": {
+        "coupon_uses": {
+          "description": "Per-user coupon usage tracking. Document ID = userId. Replaces unbounded usedByUids array.",
+          "documentId": "{userId}",
+          "fields": {
+            "useCount": {
+              "type": "integer",
+              "default": 1,
+              "description": "Number of times this user has redeemed the coupon"
+            },
+            "usedAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "First usage timestamp"
+            },
+            "lastUsedAt": {
+              "type": "timestamp",
+              "required": true,
+              "description": "Most recent usage timestamp"
+            }
+          }
+        }
+      }
+    },
+    "stock_notifications": {
+      "description": "Back-in-stock notification subscriptions (TASK 07)",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Product to watch"
+        },
+        "userId": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer who subscribed"
+        },
+        "email": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer email at time of subscription"
+        },
+        "productName": {
+          "type": "string",
+          "required": true,
+          "description": "Product name (denormalized)"
+        },
+        "notifiedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When notification email was sent (null = not yet notified)"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Subscription timestamp"
+        }
+      }
+    },
+    "product_questions": {
+      "description": "Buyer Q&A on product pages (TASK 09)",
+      "documentId": "{questionId}",
+      "fields": {
+        "questionId": {
+          "type": "string",
+          "required": true,
+          "description": "Document ID"
+        },
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Product the question is about"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Product seller ID (denormalized)"
+        },
+        "askerId": {
+          "type": "string",
+          "required": true,
+          "description": "User ID of the buyer who asked"
+        },
+        "question": {
+          "type": "string",
+          "required": true,
+          "description": "Question text (10-500 chars)"
+        },
+        "answer": {
+          "type": "string",
+          "required": false,
+          "description": "Seller's answer"
+        },
+        "answeredAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the seller answered"
+        },
+        "answeredBy": {
+          "type": "string",
+          "required": false,
+          "description": "UID of whoever answered (seller or admin)"
+        },
+        "isAnswered": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the question has been answered"
+        },
+        "upvotes": {
+          "type": "integer",
+          "default": 0,
+          "description": "Number of helpful votes"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When the question was asked"
+        }
+      }
+    },
+    "seller_metrics": {
+      "description": "Weekly seller performance metrics (TASK 11). Document ID = sellerId.",
+      "documentId": "{sellerId}",
+      "fields": {
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller user ID"
+        },
+        "disputeRate": {
+          "type": "number",
+          "required": true,
+          "description": "Dispute rate (0.0\u20131.0) over last 30 days"
+        },
+        "refundRate": {
+          "type": "number",
+          "required": true,
+          "description": "Refund rate (0.0\u20131.0) over last 30 days"
+        },
+        "cancellationRate": {
+          "type": "number",
+          "required": true,
+          "description": "Cancellation rate (0.0\u20131.0) over last 30 days"
+        },
+        "lateShipmentRate": {
+          "type": "number",
+          "required": true,
+          "description": "Late shipment rate (0.0\u20131.0) over last 30 days"
+        },
+        "avgResponseTimeHours": {
+          "type": "number",
+          "required": true,
+          "description": "Average hours to first response on buyer messages (30-day avg)"
+        },
+        "totalOrders30d": {
+          "type": "integer",
+          "required": true,
+          "description": "Total orders in the last 30 days"
+        },
+        "totalRevenueCents30d": {
+          "type": "integer",
+          "required": true,
+          "description": "Seller's gross revenue (integer, 100 = $1.00 CAD) in the last 30 days"
+        },
+        "computedAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When these metrics were last computed"
+        },
+        "avgShipDays": {
+          "type": "number",
+          "required": false,
+          "description": "Average days from order confirmed to shipped (30-day avg). Null for new sellers."
+        },
+        "positiveRatePct": {
+          "type": "number",
+          "required": false,
+          "description": "Percentage of ratings that are 4 or 5 stars (0\u2013100). Null for new sellers."
+        },
+        "totalReviews": {
+          "type": "integer",
+          "required": false,
+          "default": 0,
+          "description": "Total number of reviews the seller has received across all products"
+        }
+      }
+    },
+    "_cron_locks": {
+      "description": "Distributed locks for cron jobs to prevent concurrent execution across Cloud Function instances",
+      "documentId": "{jobName} - cron job function name",
+      "fields": {
+        "lockedAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When the lock was acquired"
+        },
+        "lockedBy": {
+          "type": "string",
+          "required": true,
+          "description": "Identifier of the instance holding the lock (cron_{jobName})"
+        },
+        "status": {
+          "type": "string",
+          "required": true,
+          "values": [
+            "running",
+            "completed"
+          ],
+          "description": "Lock status"
+        },
+        "completedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the job finished and released the lock"
+        }
+      }
+    },
+    "algolia_sync_failures": {
+      "description": "Dead Letter Queue for failed Algolia sync operations, retried hourly up to max retries",
+      "documentId": "{auto-generated}",
+      "fields": {
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Product ID that failed to sync"
+        },
+        "action": {
+          "type": "string",
+          "required": true,
+          "values": [
+            "index",
+            "delete"
+          ],
+          "description": "Sync action that failed"
+        },
+        "resolved": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the failure has been resolved (retried or max retries exceeded)"
+        },
+        "retryCount": {
+          "type": "integer",
+          "default": 0,
+          "description": "Number of retry attempts"
+        },
+        "maxRetriesExceeded": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if retry limit reached without success"
+        },
+        "lastRetryError": {
+          "type": "string",
+          "required": false,
+          "description": "Error type from most recent retry attempt"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true,
+          "description": "When the failure was first recorded"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last retry or resolution timestamp"
+        }
+      }
+    },
+    "subscriptions": {
+      "description": "Premium subscription records \u2014 one per user. Authoritative source for isPremium status. Written by backend on Stripe webhook.",
+      "docIdPattern": "{userId}",
+      "fields": {
+        "userId": {
+          "type": "string",
+          "required": true,
+          "description": "Firebase Auth UID (same as document ID)"
+        },
+        "stripeSubscriptionId": {
+          "type": "string",
+          "required": true,
+          "description": "Stripe Subscription ID"
+        },
+        "status": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "active",
+            "canceled",
+            "past_due",
+            "incomplete",
+            "incomplete_expired",
+            "trialing",
+            "unpaid"
+          ],
+          "description": "Stripe subscription status"
+        },
+        "currentPeriodStart": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Start of current billing period"
+        },
+        "currentPeriodEnd": {
+          "type": "timestamp",
+          "required": true,
+          "description": "End of current billing period (premium expires after this)"
+        },
+        "cancelAtPeriodEnd": {
+          "type": "boolean",
+          "required": true,
+          "default": false,
+          "description": "Whether subscription cancels at end of current period"
+        },
+        "cancelScheduledAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When cancellation was requested to take effect at period end"
+        },        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "status"
+          ],
+          "description": "Query active subscriptions"
+        }
+      ],
+      "security": "User reads own. Backend-only writes (Stripe webhooks)."
+    },
+    "chats": {
+      "description": "Product-scoped buyer\u2194seller chat threads. Premium buyers only. One thread per buyer+product combination.",
+      "docIdPattern": "{chatId} (auto-generated)",
+      "fields": {
+        "chatId": {
+          "type": "string",
+          "required": true
+        },
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "productTitle": {
+          "type": "string",
+          "required": true,
+          "description": "Denormalized product title"
+        },
+        "productImageUrl": {
+          "type": "string",
+          "required": false,
+          "description": "Denormalized product image URL"
+        },
+        "buyerId": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer UID (must be premium)"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller UID"
+        },
+        "lastMessage": {
+          "type": "string",
+          "required": false,
+          "description": "Preview of last message"
+        },
+        "lastMessageAt": {
+          "type": "timestamp",
+          "required": false
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      },
+      "subcollections": {
+        "messages": {
+          "docIdPattern": "{messageId} (auto-generated)",
+          "fields": {
+            "senderId": {
+              "type": "string",
+              "required": true
+            },
+            "text": {
+              "type": "string",
+              "required": true,
+              "maxLength": 2000
+            },
+            "createdAt": {
+              "type": "timestamp",
+              "required": true
+            },
+            "read": {
+              "type": "boolean",
+              "required": true,
+              "default": false
+            }
+          }
+        }
+      },
+      "indexes": [
+        {
+          "fields": [
+            "buyerId",
+            "updatedAt"
+          ],
+          "description": "Buyer inbox"
+        },
+        {
+          "fields": [
+            "sellerId",
+            "updatedAt"
+          ],
+          "description": "Seller inbox"
+        },
+        {
+          "fields": [
+            "productId",
+            "buyerId"
+          ],
+          "description": "Unique thread per product+buyer"
+        }
+      ],
+      "security": "Buyer and seller of the thread can read/write. Backend creates threads."
+    },
+    "user_security": {
+      "description": "Backend-only MFA secrets \u2014 Firestore rules: allow read, write: if false. Only accessible via Admin SDK.",
+      "fields": {
+        "mfaSecret": {
+          "type": "string",
+          "required": false,
+          "description": "TOTP MFA secret (encrypted)"
+        },
+        "mfaSecretTemp": {
+          "type": "string",
+          "required": false,
+          "description": "Temporary MFA secret during enrollment"
+        },
+        "mfaBackupCodes": {
+          "type": "array",
+          "required": false,
+          "description": "Hashed MFA backup codes (SHA-256)"
+        },
+        "mfaBackupCodesTemp": {
+          "type": "array",
+          "required": false,
+          "description": "Temporary hashed backup codes during enrollment"
+        },
+        "mfaBackupCodesSalt": {
+          "type": "string",
+          "required": false,
+          "description": "Salt for hashing backup codes"
+        },
+        "mfaFailedAttempts": {
+          "type": "number",
+          "default": 0,
+          "description": "Count of consecutive failed MFA attempts"
+        },
+        "mfaLockoutUntil": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Lockout expiry after max failed attempts"
+        },
+        "lastMfaVerify": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last successful MFA verification"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "seller_profiles": {
+      "description": "Seller-specific profile data \u2014 split from users doc. Buyers never load this doc.",
+      "fields": {
+        "stripeAccountId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Connect account ID"
+        },
+        "payoutsEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether seller can receive payouts"
+        },
+        "chargesEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether seller can accept charges"
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stripe Connect onboarding complete"
+        },
+        "pendingRequirements": {
+          "type": "array<string>",
+          "default": [],
+          "description": "Stripe Connect pending verification requirements (seller only)"
+        },
+        "commissionRateBps": {
+          "type": "number",
+          "default": 250,
+          "description": "Platform commission in basis points (250 = 2.50%)"
+        },
+        "avgRating": {
+          "type": "number",
+          "default": 0,
+          "description": "Average seller rating (0-5)"
+        },
+        "totalReviews": {
+          "type": "number",
+          "default": 0,
+          "description": "Total number of reviews"
+        },
+        "totalSales": {
+          "type": "number",
+          "default": 0,
+          "description": "Total completed sales"
+        },
+        "warehouseIds": {
+          "type": "array",
+          "required": false,
+          "description": "IDs of seller warehouses"
+        },
+        "businessName": {
+          "type": "string",
+          "required": false,
+          "description": "Seller business name"
+        },
+        "businessAddress": {
+          "type": "map",
+          "required": false,
+          "description": "Seller business address",
+          "schema": "$ref:Address"
+        },
+        "acceptsReturns": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether seller accepts returns"
+        },
+        "returnWindowDays": {
+          "type": "number",
+          "default": 30,
+          "description": "Days buyer has to initiate a return"
+        },
+        "verified": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether seller identity is verified"
+        },
+        "verificationStatus": {
+          "type": "string",
+          "required": false,
+          "description": "Verification status: pending, verified, rejected"
+        },
+        "platform": {
+          "type": "string",
+          "required": false,
+          "description": "Seller platform/source"
+        },
+        "payoutHoldDays": {
+          "type": "number",
+          "required": false,
+          "description": "Days to hold payouts after delivery"
+        },
+        "bankAccountLast4": {
+          "type": "string",
+          "required": false,
+          "description": "Last 4 digits of bank account"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When seller profile was created"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "return_requests": {
+      "description": "Tracks physical return requests with state machine: requested \u2192 approved \u2192 label_issued \u2192 received \u2192 refunded | rejected | escalated",
+      "fields": {
+        "returnId": {
+          "type": "string",
+          "required": true,
+          "description": "Auto-generated document ID"
+        },
+        "orderId": {
+          "type": "string",
+          "required": true,
+          "description": "Parent order ID"
+        },
+        "orderItemId": {
+          "type": "string",
+          "required": true,
+          "description": "Cart item ID of the item being returned"
+        },
+        "buyerId": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer user ID"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller user ID"
+        },
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Product ID"
+        },
+        "productName": {
+          "type": "string",
+          "required": true,
+          "description": "Product name snapshot"
+        },
+        "quantity": {
+          "type": "integer",
+          "default": 1,
+          "description": "Quantity being returned"
+        },
+        "returnStatus": {
+          "type": "string",
+          "default": "requested",
+          "description": "Return state machine status",
+          "values": [
+            "requested",
+            "approved",
+            "label_issued",
+            "received",
+            "refunded",
+            "rejected",
+            "escalated"
+          ]
+        },
+        "returnReason": {
+          "type": "string",
+          "required": true,
+          "description": "Buyer's reason for return",
+          "maxLength": 1000
+        },
+        "returnAdminNote": {
+          "type": "string",
+          "required": false,
+          "description": "Admin/seller note",
+          "maxLength": 1000
+        },
+        "returnTrackingNumber": {
+          "type": "string",
+          "required": false,
+          "description": "Return shipment tracking number",
+          "maxLength": 100
+        },
+        "returnRefundAmountCents": {
+          "type": "integer",
+          "required": false,
+          "description": "Refund amount in cents"
+        },
+        "requestedAt": {
+          "type": "timestamp",
+          "description": "When return was requested"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "description": "Last update timestamp"
+        },
+        "resolvedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When return was resolved (refunded or rejected)"
+        },
+        "escalatedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When the return was escalated to admin"
+        },
+        "escalationReason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason for escalation (buyer-provided or system-generated)",
+          "maxLength": 1000
+        }
+      }
+    },
+    "licenses": {
+      "description": "Digital product licenses for buyers",
+      "documentId": "{licenseId}",
+      "fields": {
+        "orderId": {
+          "type": "string",
+          "required": true
+        },
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "buyerId": {
+          "type": "string",
+          "required": true
+        },
+        "licenseKey": {
+          "type": "string",
+          "required": true
+        },
+        "isActive": {
+          "type": "boolean",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "payment_providers": {
+      "description": "Payment provider configuration (admin-managed)",
+      "documentId": "current",
+      "fields": {
+        "provider": {
+          "type": "string",
+          "required": true,
+          "description": "Active payment provider, e.g. stripe"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "updatedBy": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    "coupon_uses": {
+      "description": "Per-coupon usage tracking subcollection: coupons/{couponId}/coupon_uses/{userId}",
+      "documentId": "{userId}",
+      "fields": {
+        "usedCount": {
+          "type": "integer",
+          "required": true
+        },
+        "lastUsedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "inventory_levels": {
+      "description": "Per-warehouse stock \u2014 subcollection: products/{productId}/inventoryLevels/{warehouseId}",
+      "documentId": "{warehouseId}",
+      "fields": {
+        "warehouseId": {
+          "type": "string",
+          "required": true
+        },
+        "stockQuantity": {
+          "type": "integer",
+          "required": true
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "addresses": {
+      "description": "Buyer address book \u2014 subcollection: users/{userId}/addresses/{addressId}",
+      "documentId": "{addressId}",
+      "fields": {
+        "street": {
+          "type": "string",
+          "required": true
+        },
+        "city": {
+          "type": "string",
+          "required": true
+        },
+        "province": {
+          "type": "string",
+          "required": true
+        },
+        "postalCode": {
+          "type": "string",
+          "required": true
+        },
+        "country": {
+          "type": "string",
+          "required": true,
+          "default": "CA"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "warehouses": {
+      "description": "Seller warehouse/shipping locations \u2014 subcollection: users/{sellerId}/warehouses/{warehouseId}",
+      "documentId": "{warehouseId}",
+      "fields": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Seller-given name (1\u2013100 chars)"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "type": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "warehouse",
+            "personal"
+          ],
+          "description": "Location type"
+        },
+        "address": {
+          "type": "map",
+          "required": true,
+          "description": "Nested address object: {street, city, state (2-letter province), postalCode, country, latitude?, longitude?}"
+        }
+      }
+    },
+    "cart": {
+      "description": "User shopping cart \u2014 subcollection: users/{userId}/cart/{productId}",
+      "documentId": "{productId}",
+      "fields": {
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "quantity": {
+          "type": "integer",
+          "required": true
+        },
+        "addedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "seller_skus": {
+      "description": "Atomic SKU collision docs \u2014 top-level: seller_skus/{sellerId}_{sku}",
+      "documentId": "{sellerId}_{sku}",
+      "fields": {
+        "sellerId": {
+          "type": "string",
+          "required": true
+        },
+        "sku": {
+          "type": "string",
+          "required": true
+        },
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "book_access_tokens": {
+      "description": "Temporary access tokens for digital book downloads",
+      "documentId": "{tokenId}",
+      "fields": {
+        "buyerId": {
+          "type": "string",
+          "required": true
+        },
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "licenseId": {
+          "type": "string",
+          "required": true
+        },
+        "expiresAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "software_access_tokens": {
+      "description": "Temporary access tokens for software download links",
+      "documentId": "{tokenId}",
+      "fields": {
+        "buyerId": {
+          "type": "string",
+          "required": true
+        },
+        "productId": {
+          "type": "string",
+          "required": true
+        },
+        "licenseId": {
+          "type": "string",
+          "required": true
+        },
+        "expiresAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "pending_profiles": {
+      "description": "Pending seller onboarding profiles awaiting Stripe Connect completion",
+      "documentId": "{uid}",
+      "fields": {
+        "uid": {
+          "type": "string",
+          "required": true
+        },
+        "email": {
+          "type": "string",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "fcm_tokens": {
+      "description": "FCM device push tokens \u2014 subcollection: users/{uid}/fcm_tokens/{tokenId}",
+      "documentId": "{tokenId}",
+      "fields": {
+        "token": {
+          "type": "string",
+          "required": true
+        },
+        "platform": {
+          "type": "string",
+          "required": true,
+          "description": "android|ios|web"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "notifications": {
+      "description": "In-app notifications \u2014 subcollection: users/{uid}/notifications/{notificationId}",
+      "documentId": "{notificationId}",
+      "fields": {
+        "type": {
+          "type": "string",
+          "required": true
+        },
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "body": {
+          "type": "string",
+          "required": true
+        },
+        "isRead": {
+          "type": "boolean",
+          "required": true
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "review_votes": {
+      "description": "Helpfulness votes \u2014 subcollection: product_ratings/{ratingId}/review_votes/{voterId}",
+      "documentId": "{voterId}",
+      "fields": {
+        "helpful": {
+          "type": "boolean",
+          "required": true
+        },
+        "votedAt": {
+          "type": "timestamp",
+          "required": true
+        }
+      }
+    },
+    "email_logs": {
+      "description": "Sent email audit log for CASL/PIPEDA compliance",
+      "documentId": "{logId}",
+      "fields": {
+        "recipientId": {
+          "type": "string",
+          "required": true
+        },
+        "templateId": {
+          "type": "string",
+          "required": true
+        },
+        "subject": {
+          "type": "string",
+          "required": true
+        },
+        "sentAt": {
+          "type": "timestamp",
+          "required": true
+        },
+        "status": {
+          "type": "string",
+          "required": true,
+          "description": "sent|failed|bounced"
+        }
+      }
+    }
+  },
+  "sharedSchemas": {
+    "Address": {
+      "description": "Address object used throughout the app",
+      "fields": {
+        "street": {
+          "type": "string",
+          "required": true,
+          "description": "Street address",
+          "maxLength": 100
+        },
+        "apartment": {
+          "type": "string",
+          "default": "",
+          "description": "Unit, suite, or apartment number",
+          "maxLength": 20
+        },
+        "city": {
+          "type": "string",
+          "required": true,
+          "description": "City name",
+          "maxLength": 50
+        },
+        "state": {
+          "type": "string",
+          "required": true,
+          "description": "Province code (ON, BC, etc.)",
+          "maxLength": 2
+        },
+        "postalCode": {
+          "type": "string",
+          "required": true,
+          "description": "Canadian postal code",
+          "maxLength": 7,
+          "pattern": "^[A-Za-z]\\d[A-Za-z][ -]?\\d[A-Za-z]\\d$"
+        },
+        "country": {
+          "type": "string",
+          "default": "Canada",
+          "description": "Country name",
+          "maxLength": 20
+        },
+        "phoneNumber": {
+          "type": "string",
+          "required": false,
+          "description": "Contact phone number",
+          "pattern": "^\\d{10,15}$"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is the default address"
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Address label (Home, Work, etc.)",
+          "maxLength": 30
+        },
+        "latitude": {
+          "type": "number",
+          "required": false,
+          "description": "GPS latitude for shipping calculation"
+        },
+        "longitude": {
+          "type": "number",
+          "required": false,
+          "description": "GPS longitude for shipping calculation"
+        },
+        "formattedAddress": {
+          "type": "string",
+          "required": false,
+          "description": "Full formatted address string"
+        }
+      }
+    },
+    "OrderItem": {
+      "description": "Individual item within an order",
+      "fields": {
+        "productId": {
+          "type": "string",
+          "required": true,
+          "description": "Reference to product"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "Product name at time of order"
+        },
+        "description": {
+          "type": "string",
+          "required": true,
+          "description": "Product description"
+        },
+        "price": {
+          "type": "number",
+          "required": true,
+          "description": "Price per unit at time of order"
+        },
+        "quantity": {
+          "type": "number",
+          "required": true,
+          "description": "Quantity ordered"
+        },
+        "imageUrls": {
+          "type": "array<string>",
+          "required": true,
+          "description": "Product images"
+        },
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller's user ID"
+        },
+        "sellerAddress": {
+          "type": "map",
+          "required": true,
+          "description": "Seller's address for shipping",
+          "schema": "$ref:Address"
+        },
+        "status": {
+          "type": "string",
+          "default": "pending",
+          "description": "Per-item status for granular tracking",
+          "values": [
+            "pending",
+            "shipped",
+            "delivered",
+            "refunded"
+          ]
+        },
+        "trackingNumber": {
+          "type": "string",
+          "required": false,
+          "description": "Shipping tracking number for this item"
+        },
+        "carrier": {
+          "type": "string",
+          "required": false,
+          "description": "Shipping carrier: ups, fedex, canada_post, purolator, dhl, usps, other"
+        },
+        "shippedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When this item was shipped"
+        },
+        "deliveredAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When this item was delivered"
+        },
+        "refundedAt": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When this item was refunded"
+        },
+        "refundReason": {
+          "type": "string",
+          "required": false,
+          "description": "Reason for refund (if status=refunded)",
+          "maxLength": 500
+        },
+        "refundAmountCents": {
+          "type": "integer",
+          "required": false,
+          "description": "Partial refund amount in cents (item + proportional tax/shipping)"
+        },
+        "refundId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Refund ID (if refunded)"
+        },
+        "confirmedByBuyer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Buyer confirmed receipt of this item"
+        },
+        "variantId": {
+          "type": "string",
+          "required": false,
+          "description": "Variant ID at time of purchase"
+        },
+        "variantTitle": {
+          "type": "string",
+          "required": false,
+          "maxLength": 255,
+          "description": "Human-readable variant label e.g. 'Size: M / Color: Blue'"
+        },
+        "variantOptions": {
+          "type": "object",
+          "required": false,
+          "description": "Variant option key-value map e.g. {'Size': 'M', 'Color': 'Blue'}"
+        },
+        "variantSku": {
+          "type": "string",
+          "required": false,
+          "maxLength": 100,
+          "description": "Variant SKU snapshotted at purchase time"
+        },
+        "isDigital": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this item is a digital product"
+        },
+        "weightKg": {
+          "type": "number",
+          "required": false,
+          "description": "Product weight in kilograms"
+        },
+        "lengthCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package length in centimeters"
+        },
+        "widthCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package width in centimeters"
+        },
+        "heightCm": {
+          "type": "number",
+          "required": false,
+          "description": "Package height in centimeters"
+        },
+        "isLocalDeliveryOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only available for local delivery"
+        },
+        "isPerishable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Perishable product"
+        },
+        "estimatedShipDays": {
+          "type": "number",
+          "default": 3,
+          "description": "Estimated shipping days"
+        },
+        "deliveryOptions": {
+          "type": "array<map>",
+          "required": false,
+          "description": "Seller-defined delivery options"
+        },
+        "minimumOrderQuantity": {
+          "type": "number",
+          "default": 1,
+          "description": "Minimum order quantity"
+        },
+        "freeShipping": {
+          "type": "boolean",
+          "default": false,
+          "description": "Free shipping offered by seller"
+        },
+        "supplier": {
+          "type": "map",
+          "required": false,
+          "description": "Supplier info for international shipping estimates",
+          "schema": {
+            "type": {
+              "type": "string",
+              "description": "Supplier platform: aliexpress, alibaba, 1688, etc."
+            }
+          }
+        },
+        "fulfillmentWarehouseId": {
+          "type": "string",
+          "required": false,
+          "description": "Warehouse ID from which this item was fulfilled (null if seller ships from address)"
+        },
+        "carrierNote": {
+          "type": "string",
+          "required": false,
+          "description": "Free-text carrier override when carrier='other' (max 500 chars)"
+        },
+        "sellerSku": {
+          "type": "string",
+          "required": false,
+          "description": "Seller's SKU snapshotted at purchase time"
+        },
+        "sellerName": {
+          "type": "string",
+          "required": false,
+          "description": "Seller display name snapshotted at purchase time (Shopify/Amazon pattern)",
+          "maxLength": 200
+        }
+      }
+    },
+    "SellerPayout": {
+      "description": "Payout breakdown for a single seller. All money in integer cents.",
+      "fields": {
+        "sellerId": {
+          "type": "string",
+          "required": true,
+          "description": "Seller's user ID"
+        },
+        "stripeAccountId": {
+          "type": "string",
+          "required": false,
+          "description": "Seller's Stripe Connect account"
+        },
+        "amountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Gross amount in cents before platform fee"
+        },
+        "platformFeeCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Platform fee in cents (2.5%)"
+        },
+        "netAmountCents": {
+          "type": "integer",
+          "required": true,
+          "description": "Net amount seller receives in cents"
+        },
+        "status": {
+          "type": "string",
+          "default": "pending",
+          "description": "Payout status",
+          "values": [
+            "pending",
+            "processing",
+            "completed",
+            "failed"
+          ]
+        },
+        "stripeTransferId": {
+          "type": "string",
+          "required": false,
+          "description": "Stripe Transfer ID"
+        },
+        "payoutDate": {
+          "type": "timestamp",
+          "required": false,
+          "description": "When transfer was completed"
+        },
+        "failureReason": {
+          "type": "string",
+          "required": false,
+          "description": "Error message if transfer failed"
+        }
+      }
+    }
+  },
+  "enums": {
+    "OrderStatus": {
+      "description": "Order lifecycle states",
+      "values": {
+        "pending": "Order created, awaiting payment",
+        "confirmed": "Payment confirmed, order processing",
+        "processing": "Being prepared for shipping",
+        "shipped": "All items shipped",
+        "in_transit": "Carrier has the package in transit",
+        "delivered": "All items delivered",
+        "cancelled": "Order cancelled",
+        "failed": "Payment failed",
+        "expired": "Checkout session expired",
+        "disputed": "Order disputed (active chargeback/dispute)"
+      }
+    },
+    "PaymentStatus": {
+      "description": "Payment lifecycle states",
+      "values": {
+        "awaiting_payment": "Waiting for customer payment",
+        "processing": "Payment being processed",
+        "authorized": "Payment authorized (manual capture)",
+        "paid": "Payment successful",
+        "captured": "Payment captured (funds transferred)",
+        "payment_failed": "Payment failed",
+        "refunded": "Payment refunded",
+        "partially_refunded": "Partial refund issued",
+        "session_expired": "Checkout session expired",
+        "cancelled": "Payment cancelled",
+        "authorization_expired": "Authorization expired (7-day window passed)",
+        "capturing": "Capture in progress (idempotency lock)",
+        "cancelling": "Cancellation in progress (idempotency lock)",
+        "expiring": "Expiry in progress (idempotency lock)"
+      }
+    },
+    "DeliveryStatus": {
+      "description": "Per-item delivery states",
+      "values": {
+        "pending": "Awaiting shipment",
+        "shipped": "Item shipped with tracking",
+        "delivered": "Item delivered",
+        "refunded": "Item refunded"
+      }
+    },
+    "PayoutStatus": {
+      "description": "Seller payout states",
+      "values": {
+        "pending": "Awaiting buyer confirmation",
+        "processing": "Transfers being processed",
+        "completed": "All sellers paid",
+        "partial": "Some sellers paid",
+        "failed": "Transfer(s) failed",
+        "reversed": "Transfer reversed",
+        "partially_reversed": "Transfer partially reversed (partial refund)",
+        "reversed_dispute": "Transfer reversed due to dispute"
+      }
+    },
+    "UserRoles": {
+      "description": "User role types",
+      "values": {
+        "admin": "Platform administrator",
+        "seller": "Registered seller",
+        "buyer": "Marketplace buyer"
+      }
+    }
+  },
+  "categories": {
+    "description": "Product category IDs and names",
+    "list": [
+      {
+        "id": 1,
+        "name": "Electronics"
+      },
+      {
+        "id": 2,
+        "name": "Computers"
+      },
+      {
+        "id": 3,
+        "name": "Gaming"
+      },
+      {
+        "id": 4,
+        "name": "Home & Kitchen"
+      },
+      {
+        "id": 5,
+        "name": "Fashion"
+      },
+      {
+        "id": 6,
+        "name": "Shoes & Accessories"
+      },
+      {
+        "id": 7,
+        "name": "Jewelry & Watches"
+      },
+      {
+        "id": 8,
+        "name": "Beauty & Personal Care"
+      },
+      {
+        "id": 9,
+        "name": "Health & Wellness"
+      },
+      {
+        "id": 10,
+        "name": "Sports & Fitness"
+      },
+      {
+        "id": 11,
+        "name": "Automotive"
+      },
+      {
+        "id": 12,
+        "name": "Tools & Hardware"
+      },
+      {
+        "id": 13,
+        "name": "Office Supplies"
+      },
+      {
+        "id": 14,
+        "name": "Books"
+      },
+      {
+        "id": 15,
+        "name": "Music & Instruments"
+      },
+      {
+        "id": 16,
+        "name": "Toys & Games"
+      },
+      {
+        "id": 17,
+        "name": "Baby & Kids"
+      },
+      {
+        "id": 18,
+        "name": "Pet Supplies"
+      },
+      {
+        "id": 19,
+        "name": "Groceries"
+      },
+      {
+        "id": 20,
+        "name": "Art & Collectibles"
+      },
+      {
+        "id": 21,
+        "name": "Digital Products"
+      }
+    ]
+  },
+  "businessRules": {
+    "platformFee": {
+      "percentage": 2.5,
+      "description": "Platform fee charged on seller payouts"
+    },
+    "autoConfirmDays": {
+      "days": 5,
+      "description": "Days after delivery before auto-confirming order"
+    },
+    "currency": {
+      "code": "cad",
+      "symbol": "$",
+      "description": "Canadian dollars only"
+    },
+    "geographicRestrictions": {
+      "sellersAllowedCountries": "worldwide",
+      "buyersAllowedCountries": [
+        "Canada"
+      ],
+      "billingAllowedCountries": [
+        "Canada"
+      ],
+      "description": "Marketplace serving Canadian buyers. Sellers can be from any country. Buyers must have Canadian billing/shipping addresses."
+    },
+    "shippingCalculation": {
+      "formula": "distance_km * 0.5",
+      "description": "Shipping cost based on distance from seller"
+    },
+    "taxes": {
+      "description": "Provincial tax rates applied based on delivery address",
+      "provinces": {
+        "AB": {
+          "GST": 5
+        },
+        "BC": {
+          "GST": 5,
+          "PST": 7
+        },
+        "MB": {
+          "GST": 5,
+          "PST": 7
+        },
+        "NB": {
+          "HST": 15
+        },
+        "NL": {
+          "HST": 15
+        },
+        "NS": {
+          "HST": 14
+        },
+        "NT": {
+          "GST": 5
+        },
+        "NU": {
+          "GST": 5
+        },
+        "ON": {
+          "HST": 13
+        },
+        "PE": {
+          "HST": 15
+        },
+        "QC": {
+          "GST": 5,
+          "QST": 9.975
+        },
+        "SK": {
+          "GST": 5,
+          "PST": 6
+        },
+        "YT": {
+          "GST": 5
+        }
+      }
+    },
+    "paymentProviders": {
+      "supported": [
+        "stripe"
+      ],
+      "comingSoon": [
+        "paypal",
+        "wise"
+      ],
+      "description": "Payment providers for seller payouts"
+    },
+    "supplierPlatforms": {
+      "description": "Supported international supplier platforms for dropshipping",
+      "regions": {
+        "china": [
+          "aliexpress",
+          "alibaba",
+          "1688",
+          "dhgate",
+          "temu",
+          "made_in_china",
+          "global_sources",
+          "banggood"
+        ],
+        "korea": [
+          "gmarket",
+          "coupang"
+        ],
+        "japan": [
+          "rakuten",
+          "amazon_japan"
+        ],
+        "india": [
+          "indiamart",
+          "flipkart_wholesale"
+        ],
+        "europe": [
+          "amazon_europe",
+          "faire"
+        ],
+        "northAmerica": [
+          "amazon_usa",
+          "walmart",
+          "costco_business",
+          "etsy_wholesale"
+        ],
+        "dropshipping": [
+          "cjdropshipping",
+          "spocket",
+          "printful",
+          "printify",
+          "modalyst",
+          "doba"
+        ],
+        "custom": [
+          "custom",
+          "other"
+        ]
+      },
+      "deliveryEstimates": {
+        "aliexpress": {
+          "minDays": 15,
+          "maxDays": 30
+        },
+        "alibaba": {
+          "minDays": 25,
+          "maxDays": 45
+        },
+        "1688": {
+          "minDays": 25,
+          "maxDays": 45
+        },
+        "dhgate": {
+          "minDays": 20,
+          "maxDays": 40
+        },
+        "temu": {
+          "minDays": 7,
+          "maxDays": 15
+        },
+        "cjdropshipping": {
+          "minDays": 10,
+          "maxDays": 20
+        },
+        "local": {
+          "minDays": 1,
+          "maxDays": 5
+        },
+        "default": {
+          "minDays": 3,
+          "maxDays": 7
+        }
+      }
+    }
+  }
+}

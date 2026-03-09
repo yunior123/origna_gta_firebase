@@ -1,0 +1,39 @@
+# OrignaGta - AI-Friendly Codebase Map
+
+> This file provides a high-level overview of the OrignaGta project for AI agents (Gemini, Claude, Copilot, Grok).
+
+## Project Overview
+OrignaGta is a high-scale e-commerce marketplace (target 100M+ users/year).
+- **Frontend:** Flutter (Riverpod, MVVM)
+- **Backend:** Python Cloud Functions (Firebase, Pydantic)
+- **Database:** Firestore (NoSQL)
+- **Payments:** Stripe Connect Express
+- **Search:** Algolia
+- **Storage:** R2 / Cloudflare
+
+## Key Directories
+- `/origna_gta`: Flutter application source code.
+- `/functions`: Python Cloud Functions source code.
+- `/docs`: Detailed documentation, schemas, and ADRs.
+- `/e2e`: Playwright E2E tests.
+- `/origna_flows`: User journey definitions and Flutter semantics.
+- `/admin`: CLI tools for project management.
+- `.claude/agents`: Specialized AI sub-agents (Security, Performance, Firebase Architect, etc.).
+- `.claude/skills`: Repeatable AI workflows and expert guidance (Scalability, E2E, Laws).
+- `CLAUDE.md`: Global mandates and stack-specific hierarchical rules.
+
+## Architecture Guidelines
+- **MVVM + Riverpod:** No logic in UI screens.
+- **Single Source of Truth:** Constants defined in `schema_constants` (both stacks).
+- **Logic First:** Predict adversarial scenarios before implementation.
+- **No Legacy Handling:** Fix forward, no backward compatibility needed (pre-launch).
+- **Canada First:** Buyers must be Canadian (enforced backend-first).
+
+## Verification Commands
+- **Flutter Tests:** `flutter test`
+- **Python Tests:** `pytest functions/tests`
+- **Linting:** `npm run lint` (root) or `ruff check functions`
+- **Type Checking:** `tsc` (e2e) or `mypy functions`
+
+## Full Documentation
+See `llms-full.txt` for a detailed breakdown of modules and symbols.

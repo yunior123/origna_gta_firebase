@@ -1,0 +1,119 @@
+{
+  "description": "Product rating within an order.",
+  "properties": {
+    "productId": {
+      "minLength": 1,
+      "title": "Productid",
+      "type": "string"
+    },
+    "userId": {
+      "minLength": 1,
+      "title": "Userid",
+      "type": "string"
+    },
+    "orderId": {
+      "minLength": 1,
+      "title": "Orderid",
+      "type": "string"
+    },
+    "rating": {
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Rating",
+      "type": "number"
+    },
+    "review": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Review"
+    },
+    "reviewImageUrls": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Reviewimageurls",
+      "type": "array",
+      "default": []
+    },
+    "sellerReply": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sellerreply"
+    },
+    "sellerReplyAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sellerreplyat"
+    },
+    "helpfulCount": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Helpfulcount",
+      "type": "integer"
+    },
+    "verifiedPurchase": {
+      "default": true,
+      "title": "Verifiedpurchase",
+      "type": "boolean"
+    },
+    "isRelatedParty": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "True when shipping address matches seller address — flagged for moderation.",
+      "title": "Isrelatedparty"
+    },
+    "helpfulVoterIds": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Helpfulvoterids",
+      "type": "array",
+      "default": []
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    }
+  },
+  "required": [
+    "productId",
+    "userId",
+    "orderId",
+    "rating"
+  ],
+  "title": "Ratings",
+  "type": "object"
+}

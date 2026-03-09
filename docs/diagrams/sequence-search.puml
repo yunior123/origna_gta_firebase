@@ -1,0 +1,162 @@
+@startuml Product Search Flow - Algolia with Firestore Fallback
+!pragma teoz true
+
+actor "User" as User
+participant "Flutter UI\n(SearchBar)" as UI
+participant "HomeViewModel" as VM
+participant "AlgoliaProductRepository" as Repo
+participant "AlgoliaService" as AlgoliaService
+participant "Algolia API" as Algolia
+participant "Firestore" as Firestore
+participant "ProductRepository\n(Firestore)" as FallbackRepo
+
+autonumber
+
+== Phase 1: Search Input (Debounced) ==
+
+User -> UI: Types "laptop"
+activate UI
+
+UI -> UI: Start 500ms debounce timer
+
+User -> UI: Types "laptops"
+UI -> UI: Cancel previous timer\nRestart 500ms timer
+
+note over UI
+  **Debouncing prevents**
+  excessive API calls
+  during typing
+end note
+
+UI -> VM: onSearchChanged("laptops")
+activate VM
+
+VM -> VM: Update state\n(isLoading: true)
+
+VM -> Repo: fetchProducts(\n  query: "laptops",\n  categoryId: null\n)
+activate Repo
+
+== Phase 2: Algolia Search (Happy Path) ==
+
+Repo -> AlgoliaService: search(\n  query: "laptops",\n  filters: {isActive: true}\n)
+activate AlgoliaService
+
+AlgoliaService -> Algolia: POST /1/indexes/products/query\n{\n  query: "laptops",\n  filters: "isActive:true",\n  hitsPerPage: 20,\n  typoTolerance: true\n}
+activate Algolia
+
+Algolia -> Algolia: Search index\n- Typo tolerance\n- Ranking algorithm\n- Faceted filters
+
+Algolia --> AlgoliaService: {\n  hits: [...],\n  nbHits: 47,\n  processingTimeMS: 52\n}
+deactivate Algolia
+
+AlgoliaService -> AlgoliaService: Convert Algolia hits\nto Product models
+
+AlgoliaService --> Repo: List<Product>\n(47 products, 52ms)
+deactivate AlgoliaService
+
+Repo --> VM: ProductResult(\n  products: [...],\n  source: "algolia"\n)
+deactivate Repo
+
+VM -> VM: Update state\n{\n  products: [...],\n  isLoading: false,\n  searchQuery: "laptops"\n}
+
+VM --> UI: State changed
+deactivate VM
+
+UI -> UI: Rebuild widget tree
+
+UI --> User: Display 47 products\n(sorted by relevance)
+deactivate UI
+
+== Phase 3: Algolia Failure (Fallback Path) ==
+
+User -> UI: Types "gaming mouse"
+activate UI
+UI -> VM: onSearchChanged("gaming mouse")
+activate VM
+VM -> Repo: fetchProducts("gaming mouse")
+activate Repo
+
+Repo -> AlgoliaService: search("gaming mouse")
+activate AlgoliaService
+
+AlgoliaService -> Algolia: POST /1/indexes/products/query
+activate Algolia
+
+Algolia --> AlgoliaService: ❌ 503 Service Unavailable
+deactivate Algolia
+
+AlgoliaService --> Repo: ❌ AlgoliaException(\n  "Service unavailable"\n)
+deactivate AlgoliaService
+
+note over Repo
+  **Fallback mechanism**
+  Catches Algolia errors
+  and uses Firestore query
+end note
+
+Repo -> FallbackRepo: fetchProducts(\n  query: "gaming mouse"\n)
+activate FallbackRepo
+
+FallbackRepo -> Firestore: Query:\nwhere('isActive', '==', true)\n.where('keywords',\n  'array-contains-any',\n  ['gaming', 'mouse']\n)\n.orderBy('dateCreated', 'desc')
+activate Firestore
+
+Firestore --> FallbackRepo: DocumentSnapshot[]\n(14 products, 187ms)
+deactivate Firestore
+
+FallbackRepo -> FallbackRepo: Convert snapshots\nto Product models
+
+FallbackRepo --> Repo: List<Product>\n(14 products, slower)
+deactivate FallbackRepo
+
+Repo --> VM: ProductResult(\n  products: [...],\n  source: "firestore_fallback"\n)
+deactivate Repo
+
+VM -> VM: Update state\n(products from Firestore)
+
+VM --> UI: State changed
+deactivate VM
+
+UI --> User: Display 14 products\n(Firestore fallback)
+deactivate UI
+
+note over User, Firestore
+  **Performance Comparison**
+  Algolia: 50ms avg, typo-tolerant, ranked
+  Firestore: 200ms avg, exact match only
+  
+  Fallback ensures 100% availability
+  even if Algolia is down
+end note
+
+== Phase 4: Category Filter ==
+
+User -> UI: Select "Electronics" category
+activate UI
+
+UI -> VM: onCategoryChanged(categoryId: 1)
+activate VM
+
+VM -> Repo: fetchProducts(\n  query: "laptops",\n  categoryId: 1\n)
+activate Repo
+
+Repo -> AlgoliaService: search(\n  query: "laptops",\n  filters: "isActive:true AND categoryId:1"\n)
+activate AlgoliaService
+
+AlgoliaService -> Algolia: POST with filters
+activate Algolia
+Algolia --> AlgoliaService: {\n  hits: [...],\n  nbHits: 32\n}
+deactivate Algolia
+
+AlgoliaService --> Repo: List<Product>\n(32 electronics)
+deactivate AlgoliaService
+
+Repo --> VM: ProductResult
+deactivate Repo
+
+VM --> UI: Updated state
+deactivate VM
+
+UI --> User: Display 32 products\n(filtered by category)
+deactivate UI
+
+@enduml

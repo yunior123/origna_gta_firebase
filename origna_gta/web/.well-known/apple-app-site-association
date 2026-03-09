@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "98KN6NA6DU.ca.orignagta.app",
+        "paths": [
+          "/payment-success*",
+          "/payment-cancel*",
+          "/seller-return*",
+          "/seller-refresh*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "98KN6NA6DU.ca.orignagta.app"
+    ]
+  }
+}

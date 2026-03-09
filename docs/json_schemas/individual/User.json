@@ -1,0 +1,578 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "Complete address model with validation\nUsed for delivery, seller locations, and user addresses",
+      "example": {
+        "apartment": "Apt 4B",
+        "city": "Toronto",
+        "country": "Canada",
+        "isDefault": true,
+        "label": "Home",
+        "phoneNumber": "4165551234",
+        "postalCode": "M5V 3A8",
+        "state": "ON",
+        "street": "123 Main Street"
+      },
+      "properties": {
+        "street": {
+          "description": "Street address",
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Street",
+          "type": "string"
+        },
+        "apartment": {
+          "default": "",
+          "description": "Unit, Suite, Apt number",
+          "maxLength": 20,
+          "title": "Apartment",
+          "type": "string"
+        },
+        "city": {
+          "description": "City name",
+          "maxLength": 50,
+          "minLength": 2,
+          "title": "City",
+          "type": "string"
+        },
+        "state": {
+          "description": "Province/State code (e.g., ON, QC, BC)",
+          "maxLength": 2,
+          "minLength": 2,
+          "title": "State",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "Canadian postal code (e.g., M5V 3A8)",
+          "title": "Postalcode",
+          "type": "string"
+        },
+        "country": {
+          "default": "Canada",
+          "description": "Country name",
+          "title": "Country",
+          "type": "string"
+        },
+        "phoneNumber": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Contact phone number for delivery",
+          "title": "Phonenumber"
+        },
+        "isDefault": {
+          "default": false,
+          "description": "Whether this is the default address",
+          "title": "Isdefault",
+          "type": "boolean"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 20,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Address label (Home, Work, Other)",
+          "title": "Label"
+        },
+        "addressId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unique identifier for the address document",
+          "title": "Addressid"
+        },
+        "latitude": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Latitude for mapping/delivery routing",
+          "title": "Latitude"
+        },
+        "longitude": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Longitude for mapping/delivery routing",
+          "title": "Longitude"
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "state",
+        "postalCode"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "UserRole": {
+      "description": "User roles",
+      "enum": [
+        "admin",
+        "seller",
+        "buyer"
+      ],
+      "title": "UserRole",
+      "type": "string"
+    }
+  },
+  "description": "Complete user model\nIncludes buyer, seller, and admin information",
+  "example": {
+    "createdAt": "2026-02-01T10:00:00Z",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "roles": [
+      "buyer"
+    ],
+    "uid": "user_123abc"
+  },
+  "properties": {
+    "uid": {
+      "description": "Firebase Auth User ID",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Uid",
+      "type": "string"
+    },
+    "email": {
+      "description": "User email address",
+      "format": "email",
+      "title": "Email",
+      "type": "string"
+    },
+    "name": {
+      "description": "User display name",
+      "maxLength": 60,
+      "minLength": 2,
+      "title": "Name",
+      "type": "string"
+    },
+    "roles": {
+      "description": "User roles (buyer, seller, admin)",
+      "items": {
+        "$ref": "#/$defs/UserRole"
+      },
+      "minItems": 1,
+      "title": "Roles",
+      "type": "array"
+    },
+    "address": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Address"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "User's default address"
+    },
+    "createdAt": {
+      "description": "Account creation timestamp",
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "customerId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Stripe Customer ID for payments",
+      "title": "Customerid"
+    },
+    "lastCheckoutSession": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Last Stripe Checkout Session ID",
+      "title": "Lastcheckoutsession"
+    },
+    "lastOrderId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Last created order ID",
+      "title": "Lastorderid"
+    },
+    "lastCheckoutTimestamp": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Timestamp of last checkout",
+      "title": "Lastcheckouttimestamp"
+    },
+    "isSeller": {
+      "default": false,
+      "description": "Quick flag \u2014 seller details live in seller_profiles collection",
+      "title": "Isseller",
+      "type": "boolean"
+    },
+    "suspended": {
+      "default": false,
+      "description": "Whether account is suspended",
+      "title": "Suspended",
+      "type": "boolean"
+    },
+    "suspendedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When account was suspended",
+      "title": "Suspendedat"
+    },
+    "paymentProvider": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "stripe",
+      "description": "Payment provider for seller payouts",
+      "title": "Paymentprovider"
+    },
+    "mfaEnabled": {
+      "default": false,
+      "description": "Whether admin MFA is enabled",
+      "title": "Mfaenabled",
+      "type": "boolean"
+    },
+    "mfaEnrolledAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When MFA was first enrolled (OK for display)",
+      "title": "Mfaenrolledat"
+    },
+    "lastMfaVerify": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Last successful admin MFA verification (display-only copy; authoritative in user_security)",
+      "title": "Lastmfaverify"
+    },
+    "updatedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Last update timestamp",
+      "title": "Updatedat"
+    },
+    "taxExemption": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Tax exemption details map, e.g. {gstNumber: '123456789RT0001'}",
+      "title": "Taxexemption"
+    },
+    "emailConsent": {
+      "default": true,
+      "description": "User consented to receive transactional emails",
+      "title": "Emailconsent",
+      "type": "boolean"
+    },
+    "marketingOptIn": {
+      "default": false,
+      "description": "Explicit opt-in for marketing/promotional emails (CASL)",
+      "title": "Marketingoptin",
+      "type": "boolean"
+    },
+    "consentTimestamp": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When consent was given (ISO 8601)",
+      "title": "Consenttimestamp"
+    },
+    "consentMethod": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "How consent was obtained: signup, checkbox, double_opt_in, implied",
+      "title": "Consentmethod"
+    },
+    "privacyAcceptedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When user accepted the privacy policy",
+      "title": "Privacyacceptedat"
+    },
+    "termsAcceptedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When user accepted the Terms of Service",
+      "title": "Termsacceptedat"
+    },
+    "privacyPolicyVersion": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Version of privacy policy the user accepted",
+      "title": "Privacypolicyversion"
+    },
+    "termsVersion": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Version of Terms of Service the user accepted",
+      "title": "Termsversion"
+    },
+    "preferredLanguage": {
+      "default": "en",
+      "description": "User preferred language: 'en' or 'fr' (for Quebec Bill 96 compliance)",
+      "title": "Preferredlanguage",
+      "type": "string"
+    },
+    "unsubscribedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When user unsubscribed from marketing emails",
+      "title": "Unsubscribedat"
+    },
+    "dataProcessingConsent": {
+      "default": false,
+      "description": "Explicit consent for personal data processing (PIPEDA / Law 25)",
+      "title": "Dataprocessingconsent",
+      "type": "boolean"
+    },
+    "isPremium": {
+      "default": false,
+      "description": "Cached premium status \u2014 authoritative source: subscriptions/{uid}",
+      "title": "Ispremium",
+      "type": "boolean"
+    },
+    "premiumSince": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When premium subscription started",
+      "title": "Premiumsince"
+    },
+    "premiumExpiresAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Current billing period end (premium expires after this)",
+      "title": "Premiumexpiresat"
+    },
+    "stripeSubscriptionId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Stripe Subscription ID",
+      "title": "Stripesubscriptionid"
+    },
+    "notifyNewProducts": {
+      "default": false,
+      "description": "Opt-in: receive FCM notification when new products are added (premium only)",
+      "title": "Notifynewproducts",
+      "type": "boolean"
+    },
+    "notifyTrending": {
+      "default": false,
+      "description": "Opt-in: receive FCM notification for trending products (premium only)",
+      "title": "Notifytrending",
+      "type": "boolean"
+    },
+    "fcmToken": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Firebase Cloud Messaging device token for push notifications",
+      "title": "Fcmtoken"
+    },
+    "fcmTokenUpdatedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Last FCM token update timestamp",
+      "title": "Fcmtokenupdatedat"
+    }
+  },
+  "required": [
+    "uid",
+    "email",
+    "name",
+    "roles"
+  ],
+  "title": "User",
+  "type": "object"
+}

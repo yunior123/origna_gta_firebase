@@ -1,0 +1,832 @@
+<!DOCTYPE html><html><head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Origna GTA – Your marketplace for buying and selling across the Greater Toronto Area and all of Canada. Discover products, connect with sellers, and shop securely.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Origna GTA">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Stripe JS -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <title>Origna GTA</title>
+  <link rel="manifest" href="manifest.json">
+  
+  
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  
+  
+  <style id="splash-screen-style">
+    :root {
+      --accent: #5ce1e6;
+      --accent-strong: #3ad6ff;
+      --accent-soft: rgba(92, 225, 230, 0.18);
+      --accent-border: rgba(92, 225, 230, 0.38);
+      --accent-glow: rgba(92, 225, 230, 0.7);
+      --accent-shadow: rgba(58, 214, 255, 0.35);
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1f235a 0%, #2f3b8f 45%, #764ba2 100%);
+      position: relative;
+      perspective: 1000px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(135deg, #0b0f2c 0%, #161c46 45%, #3a2f6a 100%);
+      }
+    }
+
+    /* Subtle commerce motif overlay (grid + soft accents) */
+    .commerce-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08), transparent 30%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05), transparent 35%),
+        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.06), transparent 32%),
+        repeating-linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.06) 0px,
+          rgba(255, 255, 255, 0.06) 1px,
+          transparent 1px,
+          transparent 24px
+        );
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2));
+    }
+
+    /* Floating product-card accents to hint e-commerce */
+    .product-card-hint {
+      position: fixed;
+      width: 120px;
+      height: 80px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      z-index: 2;
+      animation: floatCard 10s ease-in-out infinite;
+    }
+
+    .product-card-hint::after {
+      content: '';
+      position: absolute;
+      inset: 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(92, 225, 230, 0.45);
+    }
+
+    .product-card-hint.card-2 { left: 12%; top: 26%; animation-delay: 1.2s; transform: scale(0.9); }
+    .product-card-hint.card-3 { right: 14%; top: 58%; animation-delay: 2.1s; transform: scale(1.05); }
+    .product-card-hint.card-4 { left: 20%; bottom: 14%; animation-delay: 3.4s; transform: scale(0.95); }
+
+    @keyframes floatCard {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+      50% { transform: translateY(-12px) scale(1.02); opacity: 1; }
+    }
+
+    /* 3D Grid Background */
+    #grid-3d {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      transform-style: preserve-3d;
+    }
+
+    /* Floating Ecommerce Icons */
+    .shape-3d-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .ecommerce-icon {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      opacity: 0.5;
+      filter: drop-shadow(0 0 15px rgba(92, 225, 230, 0.3));
+      animation: floatIcon 15s infinite ease-in-out;
+    }
+    
+    .ecommerce-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: rgba(255, 255, 255, 0.05); /* Very subtle fill */
+      stroke: #5ce1e6; /* Cyan accent */
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+      33% { transform: translateY(-30px) rotate(5deg) scale(1.05); }
+      66% { transform: translateY(15px) rotate(-3deg) scale(0.95); }
+    }
+
+    .pyramid-3d {
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 80px solid rgba(245, 87, 108, 0.2);
+      position: absolute;
+      transform-style: preserve-3d;
+      animation: spin3d 15s infinite linear;
+    }
+
+    @keyframes spin3d {
+      from { transform: rotateY(0deg) rotateX(0deg); }
+      to { transform: rotateY(360deg) rotateX(360deg); }
+    }
+
+    /* Animated stars background */
+    #stars-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    /* Particle container */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--accent-strong);
+      border-radius: 50%;
+      animation: float 16s infinite ease-in-out;
+      box-shadow: 0 0 10px var(--accent-shadow);
+    }
+
+    @keyframes float {
+      0%, 100% { 
+        transform: translateY(0) translateX(0); 
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { 
+        transform: translateY(-100vh) translateX(50px); 
+        opacity: 0;
+      }
+    }
+
+    /* Orbital container */
+    .orbit-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      z-index: 3;
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Orbits */
+    .orbit {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border: 1px solid var(--accent-border);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .orbit-1 {
+      width: 300px;
+      height: 300px;
+      animation: rotateOrbit 20s linear infinite;
+    }
+
+    .orbit-2 {
+      width: 400px;
+      height: 400px;
+      animation: rotateOrbit 30s linear infinite reverse;
+    }
+
+    .orbit-3 {
+      width: 500px;
+      height: 500px;
+      animation: rotateOrbit 40s linear infinite;
+    }
+
+    @keyframes rotateOrbit {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Electrons */
+    .electron {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 20px currentColor;
+    }
+
+    .electron-1 {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #5ce1e6, #3ad6ff);
+      animation: glow1 1.8s ease-in-out infinite alternate;
+    }
+
+    .electron-2 {
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, #6dd5fa, #3c8ce7);
+      animation: glow2 1.8s ease-in-out infinite alternate;
+    }
+
+    .electron-3 {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #89f7fe, #66a6ff);
+      animation: glow3 1.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow1 {
+      from { box-shadow: 0 0 20px var(--accent-strong); }
+      to { box-shadow: 0 0 40px var(--accent-strong), 0 0 60px var(--accent-strong); }
+    }
+
+    @keyframes glow2 {
+      from { box-shadow: 0 0 20px #3c8ce7; }
+      to { box-shadow: 0 0 40px #3c8ce7, 0 0 60px #3c8ce7; }
+    }
+
+    @keyframes glow3 {
+      from { box-shadow: 0 0 20px #66a6ff; }
+      to { box-shadow: 0 0 40px #66a6ff, 0 0 60px #66a6ff; }
+    }
+
+    /* Logo container with glassmorphism */
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      animation: logoFloat 3s ease-in-out infinite;
+      filter: drop-shadow(0 20px 60px var(--accent-shadow));
+      transform-origin: center;
+      will-change: transform;
+    }
+
+    /* If Flutter build injects splash-branding, keep it centered too (no bottom-right jump). */
+    #splash-branding {
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: translate(-50%, -50%) !important;
+      z-index: 4;
+    }
+
+    .logo-glass {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 50%;
+      border: 1px solid var(--accent-border);
+      padding: 40px;
+      box-shadow: 
+        0 8px 32px var(--accent-shadow),
+        inset 0 0 0 1px var(--accent-soft);
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { 
+        transform: translate(-50%, -50%) translateY(0px);
+      }
+      50% { 
+        transform: translate(-50%, -50%) translateY(-20px);
+      }
+    }
+
+    .contain {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: min(60vw, 300px);
+      max-height: min(60vh, 300px);
+      object-fit: contain;
+      animation: logoGlow 4s ease-in-out infinite;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { 
+        filter: brightness(1) drop-shadow(0 0 20px var(--accent-glow));
+      }
+      50% { 
+        filter: brightness(1.2) drop-shadow(0 0 40px var(--accent-strong));
+      }
+    }
+
+    .stretch {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cover {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translate(-50%, 0);
+      animation: fadeInScale 0.8s ease-out 0.4s backwards;
+      z-index: 5;
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      z-index: 5;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      z-index: 5;
+    }
+
+    @keyframes fadeInScale {
+      0% { 
+        opacity: 0; 
+        transform: translate(-50%, 20px);
+      }
+      100% { 
+        opacity: 1; 
+        transform: translate(-50%, 0);
+      }
+    }
+
+    /* Loading indicator with glassmorphism */
+    #splash-loader {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 260px;
+      height: 6px;
+      background: var(--accent-soft);
+      backdrop-filter: blur(10px);
+      border-radius: 10px;
+      overflow: hidden;
+      animation: fadeInScale 0.45s ease-out 0.25s backwards;
+      z-index: 5;
+      box-shadow: 
+        0 4px 16px var(--accent-shadow),
+        inset 0 0 0 1px var(--accent-border);
+    }
+
+    #splash-loader::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -40%;
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, 
+        transparent, 
+        var(--accent),
+        var(--accent-strong),
+        transparent
+      );
+      animation: shimmer 1s ease-in-out infinite;
+      border-radius: 10px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    @keyframes shimmer {
+      0% { left: -40%; }
+      100% { left: 110%; }
+    }
+
+    /* Tagline text */
+    .tagline {
+      position: absolute;
+      bottom: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--accent);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: 8px;
+      text-align: center;
+      animation: fadeInScale 0.8s ease-out 0.6s backwards, textGlow 2.4s ease-in-out infinite;
+      text-shadow: 0 2px 10px var(--accent-shadow);
+      z-index: 5;
+      text-transform: uppercase;
+    }
+
+    @keyframes textGlow {
+      0%, 100% { 
+        text-shadow: 0 0 30px var(--accent-glow);
+      }
+      50% { 
+        text-shadow: 
+          0 0 40px var(--accent-strong),
+          0 0 60px var(--accent-glow);
+      }
+    }
+
+    /* Energy rings */
+    .energy-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--accent-border);
+      border-radius: 50%;
+      animation: energyPulse 3s ease-out infinite;
+      z-index: 2;
+    }
+
+    @keyframes energyPulse {
+      0% {
+        width: 100px;
+        height: 100px;
+        opacity: 1;
+      }
+      100% {
+        width: 600px;
+        height: 600px;
+        opacity: 0;
+      }
+    }
+
+    .energy-ring:nth-child(2) { animation-delay: 1s; }
+    .energy-ring:nth-child(3) { animation-delay: 2s; }
+
+    @media (max-width: 768px) {
+      .orbit-container {
+        width: 300px;
+        height: 300px;
+      }
+      .orbit-1 { width: 180px; height: 180px; }
+      .orbit-2 { width: 240px; height: 240px; }
+      .orbit-3 { width: 300px; height: 300px; }
+      .tagline { 
+        font-size: 14px; 
+        letter-spacing: 4px;
+      }
+      #splash-loader { width: 200px; }
+    }
+  </style>
+  <script id="splash-screen-script">
+    let splashRemoved = false;
+
+    function removeSplashFromWeb() {
+      if (splashRemoved) return;
+      splashRemoved = true;
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.getElementById("splash-loader")?.remove();
+      document.querySelectorAll('.energy-ring').forEach(r => r.remove());
+      
+      // Cleanup all background elements
+      const bgElements = [
+        "grid-3d", "shapes-3d", "stars-canvas", "particles", 
+        "shapes-3d"
+      ];
+      bgElements.forEach(id => document.getElementById(id)?.remove());
+      
+      document.querySelector(".orbit-container")?.remove();
+      document.querySelector(".commerce-overlay")?.remove();
+      document.querySelectorAll(".product-card-hint").forEach(el => el.remove());
+      
+      // Reset to app background to avoid "blue screen" persistence
+      document.body.style.background = "#F8F9FA"; 
+    }
+
+    // Remove splash exactly when Flutter signals its first frame
+    window.addEventListener('flutter-first-frame', () => {
+      requestAnimationFrame(removeSplashFromWeb);
+    });
+
+    // Fallback: only clear if significantly delayed/stuck (safety net)
+    // Reduced from 15s to 8s for better UX - if app hasn't loaded by then, something is wrong
+    window.addEventListener('load', () => {
+       if (!splashRemoved) {
+         setTimeout(removeSplashFromWeb, 8000); // 8 seconds backup
+       }
+    });
+  </script>
+</head>
+<body>
+  <!-- 3D Grid Background -->
+  <canvas id="grid-3d"></canvas>
+
+  <!-- Commerce overlay + product card hints -->
+  <div class="commerce-overlay"></div>
+  <div class="product-card-hint card-2"></div>
+  <div class="product-card-hint card-3"></div>
+  <div class="product-card-hint card-4"></div>
+
+  <!-- 3D Floating Shapes -->
+  <div class="shape-3d-container" id="shapes-3d"></div>
+
+  <!-- Animated stars canvas -->
+  <canvas id="stars-canvas"></canvas>
+
+  <!-- Floating particles -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Energy pulse rings -->
+  <div class="energy-ring"></div>
+  <div class="energy-ring"></div>
+  <div class="energy-ring"></div>
+
+  <!-- Orbital system -->
+  <div class="orbit-container">
+    <div class="orbit orbit-1">
+      <div class="electron electron-1"></div>
+    </div>
+    <div class="orbit orbit-2">
+      <div class="electron electron-2"></div>
+    </div>
+    <div class="orbit orbit-3">
+      <div class="electron electron-3"></div>
+    </div>
+  </div>
+
+  <!-- Logo with glassmorphism -->
+  <picture id="splash" class="center">
+    <div class="logo-glass">
+      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+      <img class="contain" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+    </div>
+  </picture>
+  
+  <div id="splash-loader"></div>
+
+  <!-- Animated background script -->
+  <script>
+    const ACCENT_BASE = '92, 225, 230';
+
+    // 3D Grid Animation
+    (function() {
+      const canvas = document.getElementById('grid-3d');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const gridSize = 50;
+      const gridDepth = 20;
+      let offset = 0;
+
+      function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = `rgba(${ACCENT_BASE}, 0.18)`;
+        ctx.lineWidth = 1;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height * 0.7;
+        const vanishY = canvas.height * 0.3;
+
+        // Draw perspective grid
+        for (let z = 0; z < gridDepth; z++) {
+          const depth = (z + offset) % gridDepth;
+          const scale = depth / gridDepth;
+          const alpha = 1 - scale;
+          
+          ctx.globalAlpha = alpha * 0.5;
+
+          // Horizontal lines
+          for (let x = -10; x <= 10; x++) {
+            const x1 = centerX + (x * gridSize) * (1 - scale * 0.8);
+            const y1 = centerY + (depth * gridSize * 0.5);
+            const x2 = centerX + (x * gridSize) * (1 - scale * 0.8);
+            const y2 = vanishY + (depth * gridSize * 0.3);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+
+          // Vertical lines
+          for (let y = 0; y <= 10; y++) {
+            const x1 = centerX - (5 * gridSize) * (1 - scale * 0.8);
+            const y1 = centerY + ((y + depth) * gridSize * 0.5);
+            const x2 = centerX + (5 * gridSize) * (1 - scale * 0.8);
+            const y2 = centerY + ((y + depth) * gridSize * 0.5);
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        }
+
+        ctx.globalAlpha = 1;
+        offset += 0.05;
+        requestAnimationFrame(drawGrid);
+      }
+
+      drawGrid();
+
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    })();
+
+    // Generate Floating Ecommerce Icons
+    (function() {
+      const container = document.getElementById('shapes-3d');
+      const icons = [
+        // Shopping Bag
+        `<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
+        // Tag
+        `<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>`,
+        // Cart
+        `<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`,
+        // Credit Card
+        `<svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>`,
+        // Box / Package
+        `<svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`
+      ];
+
+      for (let i = 0; i < 8; i++) {
+        const div = document.createElement('div');
+        div.className = 'ecommerce-icon';
+        div.innerHTML = icons[i % icons.length];
+        
+        // Random positioning
+        div.style.left = (Math.random() * 90) + '%';
+        div.style.top = (Math.random() * 80 + 10) + '%';
+        
+        // Random sizes
+        const scale = 0.8 + Math.random() * 1.5;
+        div.style.transform = `scale(${scale})`;
+        
+        // Random delays
+        div.style.animationDelay = -(Math.random() * 10) + 's';
+        div.style.animationDuration = (12 + Math.random() * 10) + 's';
+        
+        container.appendChild(div);
+      }
+    })();
+
+    // Starfield animation
+    (function() {
+      const canvas = document.getElementById('stars-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const stars = [];
+      const starCount = 200;
+
+      for (let i = 0; i < starCount; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.5,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          opacity: Math.random()
+        });
+      }
+
+      function drawStars() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(star => {
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${ACCENT_BASE}, ${star.opacity * 0.45})`;
+          ctx.fill();
+
+          star.x += star.vx;
+          star.y += star.vy;
+
+          if (star.x < 0 || star.x > canvas.width) star.vx *= -1;
+          if (star.y < 0 || star.y > canvas.height) star.vy *= -1;
+
+          star.opacity += (Math.random() - 0.5) * 0.02;
+          star.opacity = Math.max(0.1, Math.min(1, star.opacity));
+        });
+        requestAnimationFrame(drawStars);
+      }
+
+      drawStars();
+
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    })();
+
+    // Generate floating particles
+    (function() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 30;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    })();
+  </script>
+  
+  <!-- Footer with legal links (visible to crawlers before Flutter loads) -->
+  <footer id="site-footer" style="position:fixed;bottom:0;left:0;right:0;z-index:9999;text-align:center;padding:12px 16px;background:rgba(15,15,40,0.85);backdrop-filter:blur(8px);border-top:1px solid rgba(92,225,230,0.2);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <a href="/privacy-policy" style="color:rgba(92,225,230,0.9);text-decoration:none;font-size:13px;margin:0 12px;">Privacy Policy</a>
+    <span style="color:rgba(255,255,255,0.3);font-size:13px;">|</span>
+    <a href="/terms-of-service" style="color:rgba(92,225,230,0.9);text-decoration:none;font-size:13px;margin:0 12px;">Terms of Service</a>
+    <span style="color:rgba(255,255,255,0.3);font-size:13px;">|</span>
+    <span style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 12px;">&copy; 2026 Origna GTA</span>
+  </footer>
+  <script>
+    // Hide the HTML footer once Flutter app has loaded
+    window.addEventListener('flutter-first-frame', function() {
+      var footer = document.getElementById('site-footer');
+      if (footer) footer.style.display = 'none';
+    });
+  </script>
+
+  <script src="flutter_bootstrap.js" async=""></script>
+
+</body></html>

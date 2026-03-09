@@ -1,0 +1,40 @@
+#!/bin/sh
+# OrignaGta Pre-commit Hook — Claude-powered audit
+#
+# Install:
+#   cp .githooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or configure git to use .githooks/ directly:
+#   git config core.hooksPath .githooks
+#
+# This hook runs fast audit checks on staged files before allowing a commit.
+# It will BLOCK commits with CRITICAL findings.
+
+set -e
+
+echo "🪝 Running pre-commit audit hooks..."
+
+# Check if Python venv exists
+if [ -f "functions/venv/bin/activate" ]; then
+    source functions/venv/bin/activate
+elif [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+fi
+
+# Run hooks in pre-commit mode (fast, staged files only)
+python audit/run_hooks.py --pre-commit
+
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "🚫 Commit blocked by audit hooks!"
+    echo "   Fix CRITICAL findings above, then try again."
+    echo ""
+    echo "   To bypass (NOT recommended): git commit --no-verify"
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0

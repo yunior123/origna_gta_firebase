@@ -1,0 +1,125 @@
+# name: Deploy to Firebase
+
+# on:
+#   push:
+#     branches: [main]
+
+# jobs:
+#   test-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       # Flutter setup - Latest stable
+#       - uses: subosito/flutter-action@v2
+#         with:
+#           channel: 'stable'
+#           cache: true
+
+#       # Python setup - Updated to 3.12
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.12'
+#           cache: 'pip'
+#           cache-dependency-path: functions/requirements.txt
+
+#       # Node.js setup - Updated to v22 (LTS)
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: '22'
+
+#       - name: Install Firebase CLI
+#         run: npm i -g firebase-tools@latest
+
+#       # Fixed the floating env block from your snippet
+#       - name: Authenticate Firebase
+#         run: firebase use --add orignagta
+#         env:
+#           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+#       # Install Python dependencies
+#       - name: Install Python dependencies
+#         run: |
+#           cd functions
+#           pip install -r requirements.txt
+#           pip install pytest
+
+#       # Flutter analyze
+#       - name: Flutter analyze
+#         run: |
+#           cd origna_gta
+#           flutter pub get
+#           flutter analyze
+
+#       # Flutter tests
+#       - name: Flutter tests
+#         run: |
+#           cd origna_gta
+#           flutter test
+
+#       # Dart unit tests
+#       - name: Dart unit tests
+#         run: |
+#           cd origna_gta
+#           flutter test test/unit/
+
+#       # Python tests
+#       - name: Python tests
+#         run: |
+#           cd functions
+#           python -m pytest tests/ -v --tb=short
+
+#       # Build Flutter web (Required for E2E)
+#       - name: Build Flutter web
+#         run: |
+#           cd origna_gta
+#           flutter build web --release
+
+#       # Deploy to Firebase (Hosting + Functions + Firestore)
+#       - name: Deploy Firebase Hosting
+#         uses: FirebaseExtended/action-hosting-deploy@v0
+#         with:
+#           repoToken: ${{ secrets.GITHUB_TOKEN }}
+#           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+#           channelId: live
+#           projectId: orignagta
+
+#       # Deploy Cloud Functions
+#       - name: Deploy Firebase Functions
+#         uses: w9jds/firebase-action@v11.31.0
+#         with:
+#           args: deploy --only functions 
+#         env:
+#           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+#       # Deploy Firestore Rules
+#       - name: Deploy Firestore Rules
+#         uses: w9jds/firebase-action@v11.31.0
+#         with:
+#           args: deploy --only firestore:rules
+#         env:
+#           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+#       # Deploy Firestore Indexes
+#       - name: Deploy Firestore Indexes
+#         uses: w9jds/firebase-action@v11.31.0
+#         with:
+#           args: deploy --only firestore:indexes
+#         env:
+#           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+#       - name: Deployment Summary
+#         run: |
+#           echo "✅ Firebase Hosting deployed"
+#           echo "✅ Cloud Functions deployed"
+#           echo "✅ Firestore Rules deployed"
+#           echo "✅ Firestore Indexes deployed"
+
+
+
+
+ firebase deploy --only firestore:indexes
+ firebase deploy --only firestore:rules
+ firebase deploy --only functions
+ firebase deploy --only hosting

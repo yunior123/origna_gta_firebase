@@ -1,0 +1,36 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "markdown",
+    "headerText": "OrignaGta - Full Codebase Snapshot for AI Analysis",
+    "showLineNumbers": true
+  },
+  "include": [
+    "**/*"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/.dart_tool/**",
+    "**/.git/**",
+    "**/.idea/**",
+    "**/.vscode/**",
+    "**/venv/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/*.png",
+    "**/*.jpg",
+    "**/*.jpeg",
+    "**/*.gif",
+    "**/*.svg",
+    "**/*.pdf",
+    "**/*.docx",
+    "**/*.xlsx",
+    "**/*.zip",
+    "**/*.tar.gz",
+    "**/repomix-output.txt",
+    "**/logs/**",
+    "**/test-results/**",
+    "**/playwright-report/**"
+  ]
+}

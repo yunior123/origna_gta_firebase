@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "orignagta",
+    "prod": "orignagta",
+    "dev": "orignagta-dev",
+    "staging": "orignagta-staging"
+  },
+  "targets": {
+    "orignagta": {
+      "hosting": {
+        "orignagta": [
+          "orignagta"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -1,0 +1,76 @@
+anyio==4.12.1
+blinker==1.9.0
+boto3==1.42.34
+botocore==1.42.34
+CacheControl==0.14.3
+certifi==2026.1.4
+cffi==2.0.0
+charset-normalizer==3.4.4
+click==8.1.8
+cloudevents==1.9.0
+cryptography==46.0.3
+firebase_admin==7.1.0
+firebase-functions==0.4.3
+# NOTE: 0.4.x has a bug in firestore_fn.py where event_attributes["authtype"]
+# crashes with KeyError when triggers are invoked by service accounts.
+# We monkey-patch this in main.py until upstream fixes it.
+Flask==3.1.2
+flask-cors==6.0.2
+functions-framework==3.9.2
+google-api-core==2.29.0
+google-auth==2.47.0
+google-cloud-core==2.5.0
+google-cloud-firestore==2.23.0
+google-cloud-secret-manager==2.24.0
+google-cloud-storage==3.8.0
+google-cloud-tasks==2.17.1
+google-crc32c==1.8.0
+google-events==0.5.0
+google-resumable-media==2.8.0
+googleapis-common-protos==1.66.0
+grpcio==1.71.2
+grpcio-status==1.71.2
+gunicorn==24.1.1
+h11==0.16.0
+h2==4.3.0
+hpack==4.1.0
+httpcore==1.0.9
+httpx==0.28.1
+hyperframe==6.1.0
+idna==3.11
+itsdangerous==2.2.0
+Jinja2==3.1.6
+jmespath==1.1.0
+mailjet-rest==1.5.1
+MarkupSafe==3.0.3
+msgpack==1.1.2
+packaging==26.0
+proto-plus==1.27.0
+protobuf==5.29.3
+pyasn1==0.6.2
+pyasn1_modules==0.4.2
+pycparser==3.0
+PyJWT==2.10.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+python-http-client==3.3.7
+PyYAML==6.0.3
+requests==2.32.5
+pyotp==2.9.0
+rsa==4.9.1
+s3transfer==0.16.0
+stripe==14.2.0
+typing_extensions==4.15.0
+urllib3==2.6.3
+Werkzeug==3.1.5
+algoliasearch==4.6.1
+
+# PDF invoice generation
+reportlab==4.4.0
+
+# Pydantic for data validation and schema generation
+pydantic==2.11.2
+email-validator==2.2.0
+
+# Error monitoring
+sentry-sdk[flask]==2.22.0

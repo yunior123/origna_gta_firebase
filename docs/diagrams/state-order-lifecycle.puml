@@ -1,0 +1,247 @@
+@startuml Order Status State Machine
+!pragma useVerticalIf on
+
+skinparam state {
+    BackgroundColor<<Initial>> LightGreen
+    BackgroundColor<<Active>> LightSkyBlue
+    BackgroundColor<<Terminal>> LightCoral
+    BackgroundColor<<Success>> PaleGreen
+    BackgroundColor<<Failure>> LightPink
+}
+
+[*] --> pending : Order created
+
+state pending <<Initial>> {
+    pending : **Payment Status:** pending
+    pending : **Delivery Status:** not_shipped
+    pending : --
+    pending : Awaiting payment authorization
+    pending : Timer: 7 days to authorize
+}
+
+state confirmed <<Active>> {
+    confirmed : **Payment Status:** authorized
+    confirmed : **Delivery Status:** not_shipped
+    confirmed : --
+    confirmed : Funds held (not captured)
+    confirmed : Seller must ship within 7 days
+    confirmed : Buyer can request shipping quote
+}
+
+state processing <<Active>> {
+    processing : **Payment Status:** authorized
+    processing : **Delivery Status:** preparing
+    processing : --
+    processing : Seller preparing order
+    processing : Can add tracking info
+}
+
+state shipped <<Active>> {
+    shipped : **Payment Status:** authorized
+    shipped : **Delivery Status:** shipped
+    shipped : --
+    shipped : Tracking number assigned
+    shipped : Awaiting buyer confirmation
+    shipped : Auto-confirm after 7 days
+}
+
+state delivered <<Success>> {
+    delivered : **Payment Status:** captured
+    delivered : **Delivery Status:** delivered
+    delivered : --
+    delivered : Payment captured from buyer
+    delivered : Payouts initiated to sellers
+    delivered : Can be rated/reviewed
+}
+
+state cancelled <<Failure>> {
+    cancelled : **Payment Status:** cancelled/refunded
+    cancelled : **Delivery Status:** cancelled
+    cancelled : --
+    cancelled : Order terminated
+    cancelled : Stock returned
+    cancelled : Refund issued (if paid)
+}
+
+state expired <<Failure>> {
+    expired : **Payment Status:** expired
+    expired : **Delivery Status:** not_shipped
+    expired : --
+    expired : Authorization window exceeded (7 days)
+    expired : Funds released back to buyer
+    expired : Stock returned
+}
+
+state refunded <<Terminal>> {
+    refunded : **Payment Status:** refunded
+    refunded : **Delivery Status:** returned/disputed
+    refunded : --
+    refunded : Full refund issued
+    refunded : Payout reversed (if applicable)
+}
+
+' ======== Transitions ========
+
+pending --> confirmed : [1] Payment authorized\n(Stripe webhook:\ncheckout.session.completed)
+pending --> cancelled : [2] Payment failed\n(buyer cancelled checkout)
+pending --> expired : [3] 7 days elapsed\n(cron: check_expired_authorizations)
+
+confirmed --> processing : [4] Seller accepts order\n(update_order_status)
+confirmed --> cancelled : [5] Buyer cancels\nOR Seller rejects\n(cancel_order function)
+
+processing --> shipped : [6] Seller adds tracking\n(update_order_status)
+processing --> cancelled : [7] Seller cancels\nOR Stock unavailable
+
+shipped --> delivered : [8] Buyer confirms receipt\n(confirm_order_receipt)\nOR 7 days auto-confirm\n(cron job)
+
+delivered --> refunded : [9] Admin approves refund\n(request_refund function)\nOR Dispute resolution
+
+' ======== Guards & Conditions ========
+
+note right of pending
+  **Entry Conditions:**
+  ✓ Stock available (atomic check)
+  ✓ Valid shipping address (Canada-only)
+  ✓ Price validated server-side
+  ✓ Stripe session created
+  
+  **Exit Triggers:**
+  - Stripe webhook event
+  - Cron job (expiration)
+  - Buyer cancellation
+end note
+
+note right of confirmed
+  **Guards:**
+  ✓ Payment authorization valid
+  ✓ Seller not suspended
+  ✓ Within 7-day window
+  
+  **Actions on Entry:**
+  - Send email to buyer (confirmation)
+  - Send email to seller (new order)
+  - Start expiration timer
+  
+  **Shipping Approval Flow:**
+  If shippingCost > estimated:
+    → Request buyer approval
+    → Await buyer response
+    → If rejected: cancel order
+end note
+
+note right of processing
+  **State Machine Validation:**
+  
+  // functions/config.py
+  VALID_TRANSITIONS = {
+    'pending': ['confirmed', 'cancelled', 'expired'],
+    'confirmed': ['processing', 'cancelled'],
+    'processing': ['shipped', 'cancelled'],
+    'shipped': ['delivered'],
+    'delivered': ['refunded']
+  }
+  
+  def is_valid_transition(old, new):
+    return new in VALID_TRANSITIONS.get(old, [])
+end note
+
+note right of shipped
+  **Auto-Capture Logic:**
+  
+  Cron: auto_capture_confirmed_receipts
+  Schedule: Daily 01:00 UTC
+  
+  Query orders where:
+    - deliveryStatus = 'delivered'
+    - dateDelivered + 7 days < now
+    - paymentStatus = 'authorized'
+  
+  For each order:
+    → Capture payment intent
+    → Create payout records
+    → Transfer to sellers (- 2.5% fee)
+end note
+
+note bottom of cancelled
+  **Cancellation Reasons:**
+  - Buyer request (before shipping)
+  - Seller out of stock
+  - Payment failed
+  - Fraud detected (high score)
+  - Seller suspended
+  
+  **Rollback Actions:**
+  - Restore stock (atomic transaction)
+  - Void/refund payment
+  - Send cancellation emails
+  - Create security alert (if fraud)
+end note
+
+note bottom of delivered
+  **Payment Capture Flow:**
+  
+  1. Buyer clicks "Confirm Receipt"
+     OR 7 days auto-confirm
+  
+  2. confirm_order_receipt() function:
+     a. Stripe.capture_payment_intent()
+     b. Update order (status: delivered)
+     c. For each seller in order:
+        - Calculate: sellerTotal - 2.5%
+        - Create payout record
+        - Stripe.create_transfer()
+  
+  3. Buyer can now rate products
+end note
+
+note bottom of refunded
+  **Refund Scenarios:**
+  - Item not as described
+  - Damaged in transit
+  - Never received (dispute)
+  
+  **Process:**
+  1. Buyer clicks "Request Refund"
+  2. Admin reviews request
+  3. If approved:
+     - Stripe.refund_payment_intent()
+     - Reverse payout (if captured)
+     - Update order status
+  
+  **Fraud Protection:**
+  Max 2 refunds per user/month
+  (rate limited in request_refund function)
+end note
+
+' ======== Parallel States ========
+
+state "Multi-Seller Coordination" as MultiSeller {
+    state "Seller A Processing" as SellerA
+    state "Seller B Processing" as SellerB
+    
+    note right of SellerA
+      **sellerCaptures map:**
+      {
+        "sellerA_uid": {
+          "captured": false,
+          "amount": 5000,
+          "items": [...]
+        },
+        "sellerB_uid": {
+          "captured": false,
+          "amount": 3000,
+          "items": [...]
+        }
+      }
+      
+      Each seller captured independently
+      Order status = delivered when ALL captured
+    end note
+}
+
+delivered --> [*] : Order archived\n(after 30 days, cron job)
+cancelled --> [*]
+expired --> [*]
+refunded --> [*]
+
+@enduml
