@@ -76,6 +76,32 @@ except (ImportError, AttributeError, TypeError, ValueError) as patch_err:
         f"Scheduler datetime monkey patch skipped; microsecond fallback inactive: {type(patch_err).__name__}"
     )
 
+# ===============================================
+# MONKEY-PATCH: firebase-functions 0.4.x scheduler_fn.on_schedule_wrapped crashes with
+# AttributeError: 'ScheduledEvent' object has no attribute 'headers' when the scheduled
+# function is invoked via the Cloud Run v2 event-driven path (ScheduledEvent) rather than
+# via HTTP trigger (flask.Request). The SDK tries request.headers.get("X-CloudScheduler-...")
+# but ScheduledEvent has no .headers attribute.
+# Fix: add a headers stub to ScheduledEvent so .get() returns None (schedule_time=None).
+# Sentry issue: FLUTTER-11 (compute_seller_metrics, Mar 2026)
+# ===============================================
+try:
+    from firebase_functions.scheduler_fn import ScheduledEvent as _ScheduledEvent
+
+    class _HeadersStub:
+        """Stub headers object — returns None for any key to satisfy scheduler_fn SDK."""
+
+        def get(self, key, default=None):
+            """Function get."""
+            return default
+
+    if not hasattr(_ScheduledEvent, "headers"):
+        _ScheduledEvent.headers = _HeadersStub()
+except (ImportError, AttributeError, TypeError) as patch_err:
+    logger.warning(
+        f"ScheduledEvent headers monkey patch skipped: {type(patch_err).__name__}"
+    )
+
 # Initialize Firebase Admin SDK BEFORE any handler imports — handlers may call
 # firestore.client() or firebase_admin.auth at import time.
 if not firebase_admin._apps:
