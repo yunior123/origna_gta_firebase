@@ -1,5 +1,13 @@
 # OrignaGTA Monorepo
 
+> Historical Firebase edition preserved as a migration reference. The active self-hosted edition lives in [`yunior123/origna_gta`](https://github.com/yunior123/origna_gta).
+
+<p align="center">
+  <img src="docs/design_ref_screenshot.png" alt="OrignaGTA design system reference" width="100%">
+</p>
+
+<p align="center"><em>Design-system snapshot from the archived Firebase codebase.</em></p>
+
 This repo contains:
 - Flutter app: origna_gta
 - Firebase Functions backend: functions
