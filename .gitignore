@@ -59,11 +59,26 @@ venv/
 # --- Environment variables & secrets ---
 .env
 .env.local
+.env.*
+!.env.example
 functions/.env
 functions/.env.local
 functions/serviceAccountKey.json
 functions/serviceAccountKey*.json
 functions/stripe.txt
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+*-key.json
+service-account*.json
+origna_gta/android/app/google-services.json
+origna_gta/ios/Runner/GoogleService-Info.plist
+origna_gta/macos/Runner/GoogleService-Info.plist
+scripts/data/auth_export.json
+.mcp.json
+.tags
 
 # --- Dependency directories ---
 node_modules/
